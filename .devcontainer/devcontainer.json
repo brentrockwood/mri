@@ -1,0 +1,30 @@
+{
+  "name": "${localWorkspaceFolderBasename}",
+  "image": "mcr.microsoft.com/devcontainers/go:dev-1.26",
+  "containerEnv": {
+    "STACK": "go"
+  },
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go"
+      ],
+      "settings": {
+        "go.toolsManagement.autoUpdate": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintOnSave": "package",
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+          }
+        }
+      }
+    }
+  }
+}

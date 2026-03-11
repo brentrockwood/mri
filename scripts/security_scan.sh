@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Security scan: checks for secrets, credentials, and sensitive patterns
-# that should never be committed to version control.
+# Security scan: checks for secrets, credentials, and sensitive patterns.
+# Runs grep-based pattern matching and Trufflehog (if available).
 #
 # Exit codes:
 #   0 - No issues found
@@ -27,109 +27,132 @@ echo ""
 ISSUES_FOUND=0
 
 # ── Patterns ─────────────────────────────────────────────────────────────────
-# Each entry: "Label|regex"
 PATTERNS=(
-    "API Keys|(api[_-]?key|apikey|api[_-]?secret)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9_-]{20,}"
-    "AWS Keys|(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9/+=]{20,}"
-    "Private Keys|-----BEGIN (RSA |DSA |EC )?PRIVATE KEY-----"
-    "Tokens|(token|auth[_-]?token|access[_-]?token)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9_.-]{20,}"
-    "Passwords|(password|passwd|pwd)['\"]?\s*[:=]\s*['\"]?[^'\"\\s]{8,}"
-    "OpenAI Keys|sk-[A-Za-z0-9]{48}"
-    "Anthropic Keys|sk-ant-[A-Za-z0-9-]{95}"
-    "Database URLs|(postgres|mysql|mongodb)://[^\\s'\"]*:[^\\s'\"]*@"
-    "IP Addresses|([0-9]{1,3}\.){3}[0-9]{1,3}"
+  "API Keys|(api[_-]?key|apikey|api[_-]?secret)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9_-]{20,}"
+  "AWS Keys|(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9/+=]{20,}"
+  "Private Keys|-----BEGIN (RSA |DSA |EC )?PRIVATE KEY-----"
+  "Tokens|(token|auth[_-]?token|access[_-]?token)['\"]?\s*[:=]\s*['\"]?[A-Za-z0-9_.-]{20,}"
+  "Passwords|(password|passwd|pwd)['\"]?\s*[:=]\s*['\"]?[^'\"\\s]{8,}"
+  "OpenAI Keys|sk-[A-Za-z0-9]{48}"
+  "Anthropic Keys|sk-ant-[A-Za-z0-9-]{95}"
+  "Database URLs|(postgres|mysql|mongodb)://[^\\s'\"]*:[^\\s'\"]*@"
+  "IP Addresses|([0-9]{1,3}\.){3}[0-9]{1,3}"
 )
 
-# ── Exclusions ────────────────────────────────────────────────────────────────
 GREP_EXCLUDES="--exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=node_modules \
   --exclude-dir=.venv --exclude-dir=venv --exclude-dir=.mypy_cache \
+  --exclude-dir=.devcontainer \
   --exclude=*.example --exclude=*_test.py --exclude=test_*.py \
   --exclude=*.md --exclude=security_scan.sh --exclude=*.json"
 
 scan_pattern() {
-    local label=$1
-    local pattern=$2
-    local results
+  local label=$1
+  local pattern=$2
+  local results
 
-    results=$(cd "$PROJECT_ROOT" && grep -rn -E -i $GREP_EXCLUDES "$pattern" . 2>/dev/null || true)
+  results=$(cd "$PROJECT_ROOT" && grep -rn -E -i $GREP_EXCLUDES "$pattern" . 2>/dev/null || true)
 
-    if [ -n "$results" ]; then
-        echo -e "${RED}✗ Potential $label found:${NC}"
-        echo "$results" | sed 's/^/  /'
-        echo ""
-        ISSUES_FOUND=$((ISSUES_FOUND + 1))
-    fi
+  if [ -n "$results" ]; then
+    echo -e "${RED}✗ Potential $label found:${NC}"
+    echo "$results" | sed 's/^/  /'
+    echo ""
+    ISSUES_FOUND=$((ISSUES_FOUND + 1))
+  fi
 }
 
 # ── Sensitive file check ──────────────────────────────────────────────────────
 echo "Checking for sensitive files..."
 
 SENSITIVE_FILES=(
-    "secrets.env"
-    "credentials.json"
-    "token.json"
-    "*.pem"
-    "*.key"
-    "id_rsa"
-    "id_dsa"
+  "secrets.env"
+  "credentials.json"
+  "token.json"
+  "*.pem"
+  "*.key"
+  "id_rsa"
+  "id_dsa"
 )
 
 for file_pattern in "${SENSITIVE_FILES[@]}"; do
-    found=$(cd "$PROJECT_ROOT" && find . -name "$file_pattern" \
-        -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" 2>/dev/null || true)
+  found=$(cd "$PROJECT_ROOT" && find . -name "$file_pattern" \
+    -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" 2>/dev/null || true)
 
-    if [ -n "$found" ]; then
-        echo -e "${YELLOW}⚠ Found: $file_pattern${NC}"
-        echo "$found" | sed 's/^/  /'
-        while IFS= read -r file; do
-            if git -C "$PROJECT_ROOT" check-ignore "$file" >/dev/null 2>&1; then
-                echo -e "  ${GREEN}✓ Properly gitignored${NC}"
-            else
-                echo -e "  ${RED}✗ NOT gitignored — fix this immediately${NC}"
-                ISSUES_FOUND=$((ISSUES_FOUND + 1))
-            fi
-        done <<< "$found"
-        echo ""
-    fi
+  if [ -n "$found" ]; then
+    echo -e "${YELLOW}⚠ Found: $file_pattern${NC}"
+    echo "$found" | sed 's/^/  /'
+    while IFS= read -r file; do
+      if git -C "$PROJECT_ROOT" check-ignore "$file" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✓ Properly gitignored${NC}"
+      else
+        echo -e "  ${RED}✗ NOT gitignored — fix this immediately${NC}"
+        ISSUES_FOUND=$((ISSUES_FOUND + 1))
+      fi
+    done <<< "$found"
+    echo ""
+  fi
 done
 
 # ── Pattern scan ─────────────────────────────────────────────────────────────
 echo "Scanning for sensitive patterns..."
 
 for entry in "${PATTERNS[@]}"; do
-    label="${entry%%|*}"
-    pattern="${entry#*|}"
-    scan_pattern "$label" "$pattern"
+  label="${entry%%|*}"
+  pattern="${entry#*|}"
+  scan_pattern "$label" "$pattern"
 done
 
 # ── Git history check ─────────────────────────────────────────────────────────
 echo "Checking git history..."
 
 LEAKED=$(cd "$PROJECT_ROOT" && git log --all --full-history --pretty=format: --name-only \
-    | grep -E "(secrets\.env|credentials\.json|token\.json|\.pem|\.key)" \
-    | grep -v "\.example" || true)
+  | grep -E "(secrets\.env|credentials\.json|token\.json|\.pem|\.key)" \
+  | grep -v "\.example" || true)
 
 if [ -n "$LEAKED" ]; then
-    echo -e "${RED}✗ Sensitive files found in git history:${NC}"
-    echo "$LEAKED" | sort -u | sed 's/^/  /'
-    echo ""
-    echo -e "${YELLOW}Consider using BFG Repo-Cleaner or git filter-repo to remove them.${NC}"
+  echo -e "${RED}✗ Sensitive files found in git history:${NC}"
+  echo "$LEAKED" | sort -u | sed 's/^/  /'
+  echo ""
+  echo -e "${YELLOW}Consider using BFG Repo-Cleaner or git filter-repo to remove them.${NC}"
+  echo ""
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
+fi
+
+# ── Trufflehog ───────────────────────────────────────────────────────────────
+echo "Running Trufflehog..."
+
+if command -v trufflehog &>/dev/null; then
+  TRUFFLEHOG_OUT=$(trufflehog filesystem "$PROJECT_ROOT" \
+    --exclude-paths="$PROJECT_ROOT/.git" \
+    --json 2>/dev/null || true)
+
+  if [ -n "$TRUFFLEHOG_OUT" ]; then
+    echo -e "${RED}✗ Trufflehog found potential secrets:${NC}"
+    echo "$TRUFFLEHOG_OUT" | sed 's/^/  /'
     echo ""
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
+  else
+    echo -e "${GREEN}✓ Trufflehog: clean${NC}"
+  fi
+else
+  echo -e "${YELLOW}⚠ Trufflehog not found in PATH — skipping deep scan.${NC}"
+  echo "  Install: https://github.com/trufflesecurity/trufflehog"
+  echo "  (Always available inside devcontainer)"
+  echo ""
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
+echo ""
 echo "================================"
 if [ $ISSUES_FOUND -eq 0 ]; then
-    echo -e "${GREEN}✓ Security scan passed.${NC}"
-    exit 0
+  echo -e "${GREEN}✓ Security scan passed.${NC}"
+  exit 0
 else
-    echo -e "${RED}✗ $ISSUES_FOUND issue(s) found.${NC}"
-    echo ""
-    echo "  1. Remove hardcoded secrets from source files"
-    echo "  2. Move secrets to secrets.env (gitignored)"
-    echo "  3. Ensure sensitive files are in .gitignore"
-    echo "  4. If secrets were committed, rotate them immediately"
-    echo ""
-    exit 1
+  echo -e "${RED}✗ $ISSUES_FOUND issue(s) found.${NC}"
+  echo ""
+  echo "  1. Remove hardcoded secrets from source files"
+  echo "  2. Move secrets to secrets.env (gitignored)"
+  echo "  3. Ensure sensitive files are in .gitignore"
+  echo "  4. If secrets were committed, rotate them immediately"
+  echo ""
+  exit 1
 fi
