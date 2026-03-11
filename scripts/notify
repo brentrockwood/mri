@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [ -z "$*" ]; then
+    echo "Usage: notify <message>" >&2
+    exit 1
+fi
+
+PROJECT="[$(basename "$PWD")]"
+MESSAGE="$PROJECT $*"
+
+RESPONSE=$(curl -s --max-time 10 -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+     -d chat_id="$TELEGRAM_BOT_CHATID" \
+     -d text="$MESSAGE")
+
+# No response indicates a network/timeout failure
+if [ -z "$RESPONSE" ]; then
+    echo "Error: No response from Telegram API." >&2
+    exit 1
+fi
+
+# Parse the "ok" field — jq -e returns non-zero if false or null
+if echo "$RESPONSE" | jq -e '.ok' > /dev/null 2>&1; then
+    exit 0
+else
+    ERROR_MSG=$(echo "$RESPONSE" | jq -r '.description' 2>/dev/null || echo "Invalid JSON: $RESPONSE")
+    echo "Error: $ERROR_MSG" >&2
+    exit 1
+fi

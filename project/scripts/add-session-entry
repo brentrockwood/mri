@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# add-session-entry: Appends a prompt/response/summary entry to AI_SESSION.md
+#
+# Usage:
+#   add-session-entry --agent <n> --model <version> --type <prompt|response|summary> "body"
+#   echo "body" | add-session-entry --agent <n> --model <version> --type <prompt>
+#   add-session-entry --agent <n> --model <version> --type <prompt> --file body.txt
+#   cat << 'EOF' | add-session-entry --agent <n> --model <version>
+#     multiline body
+#   EOF
+#
+# Options:
+#   --agent    Required. Agent name (e.g. "Claude Code")
+#   --model    Required. Model version (e.g. "claude-sonnet-4-5")
+#   --type     Entry type: prompt, response, or summary (default: prompt)
+#   --output   Output file (default: ./AI_SESSION.md)
+#   --file     Read body from file instead of positional arg or stdin
+#
+# Body input (in priority order):
+#   1. Positional argument
+#   2. --file <path>
+#   3. stdin
+#
+# Auto-generated fields:
+#   date     ISO 8601 with timezone offset
+#   git      Short git commit hash (or 'no-git' if not in a repo)
+#   sha256   Hash of body content (first 12 chars)
+#
+# Entries are never edited after being written. This file is an auditable artifact.
+
+set -euo pipefail
+
+AGENT=""
+MODEL=""
+TYPE="prompt"
+OUTPUT="./AI_SESSION.md"
+BODY=""
+FILE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --agent)  AGENT="$2";  shift 2 ;;
+    --model)  MODEL="$2";  shift 2 ;;
+    --type)   TYPE="$2";   shift 2 ;;
+    --output) OUTPUT="$2"; shift 2 ;;
+    --file)   FILE="$2";   shift 2 ;;
+    --)       shift; BODY="$*"; break ;;
+    -*)       echo "Unknown option: $1" >&2; exit 1 ;;
+    *)        BODY="$1"; shift ;;
+  esac
+done
+
+# Validate required args
+[[ -z "$AGENT" ]] && { echo "Error: --agent is required" >&2; exit 1; }
+[[ -z "$MODEL" ]] && { echo "Error: --model is required" >&2; exit 1; }
+
+# Validate type
+case "$TYPE" in
+  prompt|response|summary) ;;
+  *) echo "Error: --type must be one of: prompt, response, summary" >&2; exit 1 ;;
+esac
+
+# Read body in priority order: positional arg > --file > stdin
+if [[ -z "$BODY" ]]; then
+  if [[ -n "$FILE" ]]; then
+    [[ -f "$FILE" ]] || { echo "Error: file not found: $FILE" >&2; exit 1; }
+    BODY="$(cat "$FILE")"
+  else
+    BODY="$(cat)"
+  fi
+fi
+
+[[ -z "$BODY" ]] && { echo "Error: body is required (positional arg, --file, or stdin)" >&2; exit 1; }
+
+# Auto-generated fields
+DATE="$(date -Iseconds)"
+HASH="$(echo -n "$BODY" | sha256sum | awk '{print $1}')"
+GIT_HASH="$(git rev-parse --short HEAD 2>/dev/null || echo 'no-git')"
+
+# Initialize file with header if it doesn't exist yet
+if [[ ! -f "$OUTPUT" ]]; then
+  cat > "$OUTPUT" << 'HEADER'
+# AI Session Transcript
+
+This file is an append-only log of all prompts and key responses exchanged
+with AI agents during development. It is a required submission artifact.
+
+Entries are managed by project/scripts/add-session-entry.
+Never write to this file directly. Never edit existing entries.
+
+---
+HEADER
+  echo "Initialized $OUTPUT"
+fi
+
+# Append the entry
+cat >> "$OUTPUT" << EOF
+
+## [$DATE] [$TYPE] $AGENT / $MODEL
+**git**: \`$GIT_HASH\` | **sha256**: \`${HASH:0:12}\`
+
+$BODY
+
+---
+EOF
+
+echo "Session entry added to $OUTPUT"

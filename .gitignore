@@ -1,0 +1,84 @@
+# ============================================================
+# Secrets and credentials — NEVER commit these
+# ============================================================
+secrets.env
+credentials.json
+token.json
+*.pem
+*.key
+id_rsa
+id_dsa
+
+# ============================================================
+# Runtime state — project-specific, add yours here
+# ============================================================
+# Example: *.db, *.sqlite, data/cache/
+
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[codz]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Test and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+.pytype/
+.pyre/
+
+# Linters
+.ruff_cache/
+
+# Packaging
+pip-log.txt
+MANIFEST
+*.spec
+
+# Jupyter
+.ipynb_checkpoints
+
+# ============================================================
+# Node
+# ============================================================
+node_modules/
+npm-debug.log*
+.npm
+
+# ============================================================
+# Editor and OS
+# ============================================================
+.vscode/
+.idea/
+*.un~
+*.bak
+.DS_Store
+Thumbs.db
+notes/
+
+# ============================================================
+# Build artifacts
+# ============================================================
+/site
+docs/_build/
+target/

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Convenience script for local development runs.
+# Adjust the command below to match your project's entry point.
+
+source .venv/bin/activate
+python main.py run
