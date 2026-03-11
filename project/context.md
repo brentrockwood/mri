@@ -13,3 +13,47 @@ Project created via doa script. Stack: go. GitHub: github.com/brentrockwood/mri 
 
 EOF
 
+
+---
+date: 2026-03-11T19:39:05-0400
+hash: pv0ho7yT3TwIBUzYCFgkovpmKa1TR2qpBsqSXZygYKM=
+agent: HUMAN
+model: HUMAN
+startCommit: 82e6594bcc0989e8e2ed5e99ae1d81cbdc91321b
+---
+
+Added project file.
+
+EOF
+
+
+---
+date: 2026-03-11T19:51:17-0400
+hash: +PkQ7kNhjAIm8vdDQD7dO6DlI5l6Bxo7Bk+RatZz9Eg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 82e6594bcc0989e8e2ed5e99ae1d81cbdc91321b
+---
+
+Implemented Phase 1 (Ingestion) of repo-mri. Branch: phase-1-ingestion.
+
+Files created:
+- go.mod (10 lines): module github.com/brentrockwood/mri, go 1.23, cobra v1.8.1
+- schema/analysis.go (87 lines): all canonical data types (Analysis, Meta, Repo, Module, Dependency, Risk, File, Subsystem)
+- internal/ingestion/language.go (46 lines): DetectLanguage() — 32 extensions mapped to canonical language names
+- internal/ingestion/clone.go (32 lines): Clone() — shells out to git clone --depth 1, returns cleanup func
+- internal/ingestion/walker.go (120 lines): Walk() — skips .git, node_modules, vendor, etc.; counts lines per file
+- internal/ingestion/imports.go (175 lines): ParseImports() — Go AST for .go, regex for Python, JS/TS, Java
+- internal/ingestion/ingestion.go (243 lines): Ingest() — orchestrates clone→walk→parse→build dependency graph
+- cmd/repo-mri/main.go (84 lines): Cobra CLI with analyze subcommand; writes .repo-mri/analysis.json
+- internal/ingestion/language_test.go (62 lines): table-driven tests for DetectLanguage
+- internal/ingestion/walker_test.go (143 lines): table-driven tests for Walk using t.TempDir()
+- internal/ingestion/imports_test.go (199 lines): table-driven tests for ParseImports (Go, Python, JS, TS, Java)
+
+All tests pass: go test -race -count=1 ./...
+go vet clean. goimports clean. go build clean.
+go mod tidy resolved: cobra v1.8.1, mousetrap v1.1.0 (indirect), pflag v1.0.5 (indirect).
+No secrets. No deviations from spec.
+
+EOF
+
