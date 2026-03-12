@@ -17,6 +17,7 @@ import (
 	"github.com/brentrockwood/mri/internal/analysis"
 	"github.com/brentrockwood/mri/internal/ingestion"
 	"github.com/brentrockwood/mri/internal/providers"
+	"github.com/brentrockwood/mri/internal/report"
 	"github.com/brentrockwood/mri/schema"
 )
 
@@ -166,6 +167,14 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:     %s\n", outPath)
+
+	reportPath := filepath.Join(outDir, "report.md")
+	if err := report.Generate(&result.Analysis, outDir); err != nil {
+		// Non-fatal: log and continue.
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: report generation failed: %v\n", err)
+	} else {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Report:     %s\n", reportPath)
+	}
 
 	return nil
 }

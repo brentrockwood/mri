@@ -355,3 +355,24 @@ send 'er gate passed for Phase 5 + fixes. Branch: phase-5-aggregation. gosec: 0.
 
 EOF
 
+
+---
+date: 2026-03-12T10:55:04-0400
+hash: 3HWxXe922Di4gP5P5GlwjiCspVNWhwDTmF87vOd+bXI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: db8a5d69ede2cc8971198f4e9ab985f49da157da
+---
+
+Phase 6 report generation implemented. Branch: phase-6-report.
+
+Created internal/report/report.go with Generate(), HealthScore(), and ScoreBand() functions. Report writes a human-readable Markdown summary to .repo-mri/report.md including: repo overview table, health score (inverse of mean module risk), top 10 modules by risk, high-severity findings grouped by module, and security findings grouped by module. Both optional sections are skipped when no matching findings exist.
+
+Created internal/report/report_test.go with 12 table-driven tests covering: health score calculation, score band narrative selection, report structure/sections, section suppression when empty, both sections present when applicable, provider line rendering, correct output path and 0600 file permissions, and top-10 module limit.
+
+Wired report.Generate() into cmd/repo-mri/main.go after writing analysis.json; failure is non-fatal (logs warning, continues). Output line "Report: <path>" printed on success.
+
+All gates pass: goimports clean, go vet clean, golangci-lint 0 issues, go test -race -count=1 ./... all pass, go build clean.
+
+EOF
+
