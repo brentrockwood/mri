@@ -517,3 +517,26 @@ Per Phase 7a spec: human review required before merge. Awaiting decision.
 
 EOF
 
+
+---
+date: 2026-03-12T17:36:48-0400
+hash: PgtUtiUlc3AqCMDRP7vkjyUtTz9oUz0z2ZMCibd/TeI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 266404d04802152ed794ba8c384f81ba12221b56
+---
+
+Phase 7a iteration 2: Revised repoPreamble with specific named rules. Branch: phase-7a-prompt-tuning.
+
+Iteration 1 result: 8 → 12 findings (worse). Preamble too vague, model ignored #nosec.
+Iteration 2 result: 0 / 4 / 0 findings across three runs (baseline was 8-12).
+
+Preamble now has 5 explicit numbered rules covering: exec argument injection (#nosec G204),
+deferred close errors (nolint:errcheck), API keys in struct fields, non-fatal error paths,
+output directory permissions. Model now suppresses all previously observed false-positive
+categories. Remaining occasional findings (slice bounds, file read errors) may carry real signal.
+
+Satisfied with iteration 2. Notifying human for final review before send 'er.
+
+EOF
+

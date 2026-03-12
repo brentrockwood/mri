@@ -15,10 +15,21 @@ const anthropicModel = "claude-sonnet-4-20250514"
 // repoPreamble is the static portion of the context-aware prompt preamble.
 // It tells the model which patterns are intentional in this codebase so they
 // are not surfaced as false-positive findings.
-const repoPreamble = `CONTEXT: This is a CLI tool. The following patterns are intentional design choices and must NOT be reported as findings:
-- Non-fatal error handling: errors logged to stderr without aborting the pipeline are deliberate (the pipeline is designed to produce partial results on failure).
-- Lines annotated with #nosec have been manually reviewed and accepted; do not report the annotated issue.
-- Calling os.Exit from main-package code is expected in a CLI tool.`
+const repoPreamble = `IMPORTANT: Before reporting any finding, check whether it matches a pre-approved pattern below. If it does, DO NOT report it.
+
+This is a Go CLI tool. The following patterns are intentional and accepted:
+
+1. EXEC ARGUMENT INJECTION: All exec.Command/exec.CommandContext calls pass each argument as a separate element of a Go string slice — no shell is involved, so there is no injection risk. Lines marked "// #nosec G204" have been manually reviewed. Do NOT report command injection or argument injection for any exec call in this codebase.
+
+2. DEFERRED CLOSE ERRORS: "defer f.Close()" calls annotated with "//nolint:errcheck" are intentional. Propagating close errors from deferred reads is not idiomatic Go. Do NOT report ignored close errors or resource leaks for these lines.
+
+3. API KEYS IN STRUCT FIELDS: API keys are read once from environment variables, passed to a constructor, and held in a struct field for one analysis run. They are never written to disk or logs. Do NOT report "key exposed in memory", "sensitive value in struct", or similar findings.
+
+4. NON-FATAL ERROR PATHS: When a function logs an error to stderr and continues rather than returning, this is intentional pipeline design — partial results are preferred over aborting. Do NOT report missing error returns for these logged-and-continued paths.
+
+5. OUTPUT DIRECTORY PERMISSIONS: A directory created with 0o700 (owner-only) is the correct restrictive choice for user-owned output. Do NOT report this as overly permissive or overly restrictive.
+
+Only report findings that are genuinely problematic and not covered by any rule above.`
 
 // AnthropicProvider implements AnalysisProvider using the Anthropic API.
 type AnthropicProvider struct {

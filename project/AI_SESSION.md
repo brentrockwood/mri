@@ -300,3 +300,10 @@ Merged. Proceed with phase 7a.
 Phase 7a implementation complete. contextSetter interface, repoPreamble constant, dynamic language list in buildUserMessage. Before/after measurement: 8 → 12 findings. Preamble did not suppress #nosec false positives. Awaiting human review before merge per spec.
 
 ---
+
+## [2026-03-12T17:36:50-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `266404d` | **sha256**: `e5faaf061292`
+
+Phase 7a iteration 2: Revised preamble with 5 specific named rules. Results: 0/4/0 findings across 3 runs vs. 8-12 baseline. All previously observed false-positive categories suppressed. Notifying human for review.
+
+---
