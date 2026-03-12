@@ -64,15 +64,15 @@ Complete each phase fully before moving to the next.
 Goals: produce self-contained, portable binaries that can be used for manual testing and distribution without requiring a local Go toolchain.
 
 **Checklist:**
-- [ ] Add `--version` flag to CLI via cobra's `rootCmd.Version`; embed version string, git commit, and build date through `ldflags`
-- [ ] Update `Makefile`:
+- [x] Add `--version` flag to CLI via cobra's `rootCmd.Version`; embed version string, git commit, and build date through `ldflags`
+- [x] Update `Makefile`:
   - `build`: native binary → `bin/repo-mri`, `CGO_ENABLED=0`, stripped (`-ldflags "-s -w -X ..."`)
   - `dist`: cross-compile → `dist/` for `darwin/amd64`, `darwin/arm64`, `linux/amd64`, `linux/arm64`, `windows/amd64`
   - `install`: copy native binary to `/usr/local/bin/repo-mri`
   - `version`: print resolved version string
-- [ ] Version derived from `git describe --tags --always --dirty`; falls back to `dev` when no tags exist
-- [ ] Binary names in `dist/`: `repo-mri-<os>-<arch>` (Windows: `repo-mri-windows-amd64.exe`)
-- [ ] Update `README.md`: installation section covering pre-built binary usage, `make install`, and `make dist`
+- [x] Version derived from `git describe --tags --always --dirty`; falls back to `dev` when no tags exist
+- [x] Binary names in `dist/`: `repo-mri-<os>-<arch>` (Windows: `repo-mri-windows-amd64.exe`)
+- [x] Update `README.md`: installation section covering pre-built binary usage, `make install`, and `make dist`
 
 **Constraints:**
 - `CGO_ENABLED=0` on all targets — pure Go, no libc dependency
