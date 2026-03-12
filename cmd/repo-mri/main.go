@@ -8,16 +8,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/brentrockwood/mri/internal/ingestion"
 )
 
+// version, commit, and buildDate are injected at build time via -ldflags.
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildDate = "unknown"
+)
+
 func main() {
 	root := &cobra.Command{
-		Use:   "repo-mri",
-		Short: "Analyze a software repository and produce a diagnostic report",
+		Use:     "repo-mri",
+		Short:   "Analyze a software repository and produce a diagnostic report",
+		Version: fmt.Sprintf("%s (commit %s, built %s)", version, commit, buildDate),
 	}
 
 	root.AddCommand(newAnalyzeCmd())
@@ -77,7 +86,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Repo:      %s\n", a.Repo.Name)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files:     %d\n", a.Repo.FileCount)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Modules:   %d\n", a.Repo.ModuleCount)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Languages: %v\n", a.Repo.Languages)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Languages: %s\n", strings.Join(a.Repo.Languages, ", "))
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:    %s\n", outPath)
 
 	return nil

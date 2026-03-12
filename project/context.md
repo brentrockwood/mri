@@ -115,3 +115,57 @@ Note: retroactive entry — context entries were missed for the two preceding in
 
 EOF
 
+
+---
+date: 2026-03-12T04:16:35-0400
+hash: wyCByGlY5Ofly0gY0XRGlYGZGncA9y+fMP1/2T3mNCA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 106848b5e62840a4fffa4bbaa1a794120eb328fa
+---
+
+Phase 1a implemented. Branch: phase-1-ingestion.
+
+Added portable binary distribution support:
+- Makefile: new `dist` target cross-compiles 5 platforms (darwin/amd64, darwin/arm64, linux/amd64, linux/arm64, windows/amd64) with CGO_ENABLED=0 and -ldflags "-s -w"; `install` target copies to /usr/local/bin; version/commit/buildDate embedded at build time from git describe
+- cmd/repo-mri/main.go: added version/commit/buildDate vars wired to cobra's rootCmd.Version; --version flag now works
+- README.md: rewritten from scaffold — covers installation (pre-built binary + make install), usage, dev tasks, cross-compilation table, project structure
+- .gitignore: added bin/ to build artifact exclusions
+- project/project.md: inserted Phase 1a checklist (human-authorized)
+
+All gates clean: gosec (0), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race (pass), go build (clean).
+
+EOF
+
+
+---
+date: 2026-03-12T04:46:14-0400
+hash: DZO8v4kOTiN6vvsVErVW38xz138GjqPBeoiMVMuhrEE=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 05e248ac908868dc8f1b135cf5bcdee523b608a5
+---
+
+send 'er gate passed for Phase 1a. Branch: phase-1-ingestion.
+
+gosec: 0 issues. goimports: clean. go vet: clean. golangci-lint: 0 issues. go test -race -count=1: pass. go build: clean. Ready to push and open PR.
+
+EOF
+
+
+---
+date: 2026-03-12T04:57:18-0400
+hash: ncaPBNOrN0rlE/lB5alck2clbJh9d0ofAxh3uuH1Feg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: ce14b0126743c0447658f8b8e9f63000db67a78e
+---
+
+Fix Languages output formatting in CLI. Branch: phase-1-ingestion.
+
+cmd/repo-mri/main.go: replaced %v with strings.Join(a.Repo.Languages, ", ") so output reads "go, shell" instead of "[go shell]". Added "strings" import.
+
+send 'er gate passed: gosec (0), goimports (clean), go vet (clean), golangci-lint (0), go test -race (pass), go build (clean).
+
+EOF
+
