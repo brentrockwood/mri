@@ -98,3 +98,17 @@ send 'er
 send 'er gate passed for Phase 2 (phase-2-static-analysis). All checks clean. Awaiting push confirmation.
 
 ---
+
+## [2026-03-12T07:39:59-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `fff3ab4` | **sha256**: `af3b6330d577`
+
+It's fine. I just needed to re-read the diff. Merged. Proceed with next phase.
+
+---
+
+## [2026-03-12T07:43:39-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f25bf72` | **sha256**: `a34ed6eeff14`
+
+Phase 3 complete: provider wiring for Anthropic and OpenAI. Created internal/providers/ package with AnalysisProvider interface, FileChunk/Finding/PassType types, stub implementations for both providers, and SelectProvider registry that reads env vars. All tests pass, lint clean, build succeeds.
+
+---

@@ -223,3 +223,32 @@ CodeRabbit fixes applied. Branch: phase-2-static-analysis. 10 findings, all vali
 
 EOF
 
+
+---
+date: 2026-03-12T07:43:32-0400
+hash: O23aV0i1en0ZictjlQMMgzjBx9AiNNw8LCb2AG88WFY=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: f25bf72db46f2ff250dc476809bfb9b686b8cb9b
+---
+
+Phase 3: Provider wiring complete. Branch: phase-3-provider-wiring.
+
+Created internal/providers/ package with four files:
+- provider.go: AnalysisProvider interface, PassType constants (architecture/bug/security), FileChunk, Finding types
+- anthropic.go: AnthropicProvider struct using github.com/anthropics/anthropic-sdk-go; stub RunPass returns nil,nil
+- openai.go: OpenAIProvider struct using github.com/openai/openai-go; stub RunPass returns nil,nil
+- registry.go: SelectProvider(ctx) reads REPO_MRI_ANTHROPIC_KEY / REPO_MRI_OPENAI_KEY env vars; prefers Anthropic if both set; returns ErrNoProviderKey if neither set
+
+Registry tests cover all four env-var combinations plus a compile-time interface-satisfaction check (var _ AnalysisProvider = (*AnthropicProvider)(nil) pattern).
+
+Wired SelectProvider into cmd/repo-mri/main.go after analysis.Analyze(); if no key is set prints a notice and continues; if a key is set prints provider name and model.
+
+New deps: github.com/anthropics/anthropic-sdk-go v1.26.0, github.com/openai/openai-go v1.12.0 (plus transitive: tidwall/{gjson,match,pretty,sjson}, golang.org/x/sync).
+
+All checks pass: goimports, go vet, golangci-lint, go test -race -count=1 ./..., go build ./...
+
+Next: Phase 4 — implement actual AI passes in RunPass methods using the chunked file content.
+
+EOF
+
