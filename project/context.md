@@ -579,3 +579,25 @@ send 'er gate passed for Phase 7a. Branch: phase-7a-prompt-tuning. gosec: 0. goi
 
 EOF
 
+
+---
+date: 2026-03-12T18:00:27-0400
+hash: fknGD+CFg2r/ASitIOJtjpuM+OG/fo6IY5cI2mFDl4Q=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d1e198bfdb39a5f9e9c6dbc20949cb16b6f99886
+---
+
+Phase 8: Go package-level module granularity. Branch: phase-8-go-package-modules.
+
+Changes:
+- internal/ingestion/ingestion.go: moduleID(relPath, language) now uses full directory path as module ID for Go files (e.g. "internal/analysis" instead of "internal"). Non-Go unchanged.
+- importToModule rewritten with suffix-based longest-match instead of segment walk; handles path-based module IDs.
+- internal/ingestion/ingestion_test.go (new): TestIngest_GoPackageLevelModules, TestIngest_NonGoTopLevelModules, TestModuleID, TestImportToModule.
+- schema/analysis.go: SchemaVersion bumped "1.0" → "1.1".
+- CHANGELOG.md (new): documents breaking change to modules[] and dependencies[] for Go repos.
+
+All tests pass. Lint and gosec pending (send 'er gate).
+
+EOF
+

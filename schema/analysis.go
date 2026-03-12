@@ -4,7 +4,7 @@ package schema
 import "time"
 
 // SchemaVersion is the current version of the analysis.json schema.
-const SchemaVersion = "1.0"
+const SchemaVersion = "1.1"
 
 // CLIVersion is the current version of the CLI.
 const CLIVersion = "0.1.0"
