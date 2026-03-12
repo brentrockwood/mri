@@ -1,140 +1,273 @@
-# mri
+# Codebase MRI — Build Specification
 
-[One paragraph description of what this project does, for whom, and why it exists.]
+## What This Is
 
----
+A CLI tool written in Go that analyzes a software repository and produces a structured diagnostic report. The CLI is the engine. A UI layer will consume its output later.
 
-# Implementation Plan
-
-> **This document is write-locked after the initial planning session.**
-> Updates require explicit human authorization. See `doa.md`.
-
-## Stack & Framework Decisions
-
-### Language & Runtime
-- **[e.g. Python 3.12, Node 20, Go 1.22]**
-
-### Architecture
-- **[e.g. CLI script, REST API, event-driven service]**
-- Key characteristics: [unattended operation, stateless, etc.]
-
-### Testing Framework
-- **[e.g. pytest, Jest, go test]**
-
-### Code Style & Quality
-- **[Style guide, e.g. PEP 8, Google style]**
-- **[Formatter, e.g. black, prettier]**
-- **[Linter, e.g. ruff, eslint]**
-- **[Type checker, e.g. mypy, tsc]**
-
-### Security Scanning
-- `scripts/security_scan.sh` (grep-based, no external deps)
-- [Optional: trufflehog, gitleaks, etc.]
-
-### Dependency Management
-- **[e.g. venv + pip, npm, go modules]**
-- Pin to major versions unless otherwise noted
+One command. One output directory. One canonical JSON artifact.
 
 ---
 
-## Technical Components
+## Command Interface
 
-### 1. [Component Name]
-- [What it does]
-- [Key interfaces or dependencies]
+```bash
+repo-mri analyze https://github.com/org/repo
+repo-mri analyze .
+```
 
-### 2. [Component Name]
-- [What it does]
-- [Key interfaces or dependencies]
+Output:
 
-### 3. [Component Name]
-- [What it does]
-- [Key interfaces or dependencies]
-
----
-
-## Implementation Phases
-
-### Phase 1: Foundation
-- [ ] Project structure
-- [ ] Environment and dependency setup
-- [ ] Configuration management (secrets.env pattern)
-- [ ] Logging setup
-- [ ] [Other foundation tasks]
-
-### Phase 2: Core [Feature]
-- [ ] [Task]
-- [ ] [Task]
-- [ ] Unit tests
-
-### Phase 3: [Next Feature]
-- [ ] [Task]
-- [ ] [Task]
-- [ ] Tests
-
-### Phase 4: Production Readiness
-- [ ] Error handling and retry logic
-- [ ] Dry-run mode
-- [ ] Security scan clean
-- [ ] Full test suite passing
-- [ ] Documentation complete
-- [ ] Deployment guide
-
----
-
-## Decisions & Rationale
-
-### [Decision topic]
-- **Decision:** [What was decided]
-- **Rationale:** [Why]
-- **Alternatives considered:** [What else was on the table]
-
-### [Another decision]
-- **Decision:** [What was decided]
-- **Rationale:** [Why]
-
----
-
-## Dependencies
-
-### Core
-- [package] — [purpose]
-
-### Dev / Testing
-- [package] — [purpose]
+```
+.repo-mri/
+  analysis.json
+  report.md
+```
 
 ---
 
 ## Project Structure
 
 ```
-[project]/
-├── src/
-│   ├── [module].py
-│   └── [module].py
-├── tests/
-│   └── test_[module].py
-├── scripts/
-│   ├── run_checks.sh
-│   └── security_scan.sh
-├── docs/
-│   └── DEPLOYMENT.md
-├── project/
-│   ├── doa.md
-│   ├── project.md       ← this file
-│   ├── context.md
-│   └── scripts/
-├── main.py              # or index.js, etc.
-├── .env.example
-├── secrets.env.example
-└── requirements.txt     # or package.json, go.mod, etc.
+repo-mri/
+  cmd/
+    repo-mri/
+      main.go
+  internal/
+    ingestion/
+    analysis/
+    providers/
+      anthropic.go
+      openai.go
+    aggregation/
+    report/
+  schema/
+    analysis.go
 ```
 
 ---
 
-## Security Considerations
+## Build Order
 
-- Secrets in `secrets.env` only (gitignored)
-- No credentials, IPs, or tokens in source files
-- `scripts/security_scan.sh` runs before every push
-- [Any project-specific security notes]
+Complete each phase fully before moving to the next.
+
+### Phase 1 — Ingestion
+
+- Accept a GitHub URL or local path as input
+- Clone remote repos to a temp directory
+- Walk the file tree, filter non-code files
+- Detect languages per file
+- Parse import statements to build a dependency graph
+- Collect: file count, language breakdown, directory hierarchy, import relationships
+
+### Phase 2 — Static Analysis (no AI)
+
+Compute cheap signals before invoking any model:
+
+- Dependency graph between modules
+- File sizes and line counts
+- Cyclomatic complexity per file (best effort)
+- Most imported files
+- Deepest dependency chains
+
+### Phase 3 — Provider Wiring
+
+Both Anthropic and OpenAI implement this interface:
+
+```go
+type AnalysisProvider interface {
+    RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error)
+}
+```
+
+Provider is selected via environment variable:
+
+```bash
+REPO_MRI_ANTHROPIC_KEY
+REPO_MRI_OPENAI_KEY
+```
+
+If both are set, default to Anthropic. If neither is set, exit with a clear error message.
+
+Models:
+- Anthropic: `claude-sonnet-4-20250514`
+- OpenAI: `gpt-4o`
+
+### Phase 4 — AI Reasoning Passes
+
+Run three specialized passes. Each pass receives chunked file content and returns structured findings.
+
+**Chunking rules:**
+- Bug and security passes: file-level chunks, max 50 files per chunk
+- Architecture pass: synthesized import graph summary only, not raw file content
+
+**Passes:**
+
+| Pass | Focus |
+|---|---|
+| `architecture` | Circular dependencies, layer violations, dependency anomalies |
+| `bug` | Complexity hotspots, error handling gaps, fragile logic paths |
+| `security` | Hardcoded secrets, injection risks, auth gaps |
+
+Each pass returns an array of findings matching the risk schema below.
+
+### Phase 5 — Aggregation
+
+- Merge findings from all passes
+- Deduplicate overlapping findings (same file + same issue type)
+- Compute `risk_score` per file (0.0–1.0) from finding severity and confidence
+- Compute `risk_score` per module as average of its files
+- Rank modules by risk score descending
+
+### Phase 6 — Report Generation
+
+Write two files to `.repo-mri/`:
+
+**`analysis.json`** — canonical structured artifact (schema below)
+
+**`report.md`** — human-readable summary including:
+- Repository overview (name, languages, file count)
+- Overall health score (0–100, inverse of mean risk)
+- Top 10 riskiest modules
+- All high-severity findings grouped by module
+- Security findings section
+
+---
+
+## Canonical Data Schema
+
+### Top-Level
+
+```json
+{
+  "meta": {},
+  "repo": {},
+  "modules": [],
+  "dependencies": [],
+  "risks": [],
+  "files": [],
+  "subsystems": []
+}
+```
+
+### meta
+
+```json
+{
+  "meta": {
+    "schema_version": "1.0",
+    "cli_version": "0.1.0",
+    "model_used": "claude-sonnet-4-20250514",
+    "provider": "anthropic",
+    "analysis_duration_ms": 42300
+  }
+}
+```
+
+### repo
+
+```json
+{
+  "repo": {
+    "name": "example-repo",
+    "languages": ["python", "typescript"],
+    "file_count": 214,
+    "module_count": 12,
+    "analysis_time": "2026-03-11T18:00:00Z"
+  }
+}
+```
+
+### modules
+
+```json
+{
+  "modules": [
+    {
+      "id": "payments",
+      "path": "src/payments",
+      "language": "python",
+      "file_count": 17,
+      "risk_score": 0.63,
+      "complexity_score": 0.72
+    }
+  ]
+}
+```
+
+### dependencies
+
+```json
+{
+  "dependencies": [
+    {
+      "from": "payments",
+      "to": "database",
+      "type": "import"
+    }
+  ]
+}
+```
+
+### risks
+
+```json
+{
+  "risks": [
+    {
+      "id": "risk_001",
+      "severity": "high",
+      "type": "architecture",
+      "pass": "architecture",
+      "module": "payments",
+      "file": "src/payments/processor.py",
+      "title": "Circular dependency detected",
+      "description": "processor imports ledger and ledger imports processor",
+      "confidence": 0.82,
+      "evidence_lines": [43, 44, 45]
+    }
+  ]
+}
+```
+
+Severity values: `high`, `medium`, `low`
+Type values: `architecture`, `bug`, `security`
+
+### files
+
+```json
+{
+  "files": [
+    {
+      "path": "src/payments/processor.py",
+      "module": "payments",
+      "language": "python",
+      "lines": 842,
+      "complexity": 0.78,
+      "risk_score": 0.86
+    }
+  ]
+}
+```
+
+### subsystems (optional)
+
+```json
+{
+  "subsystems": [
+    {
+      "id": "payment_pipeline",
+      "modules": ["payments", "ledger", "queue"]
+    }
+  ]
+}
+```
+
+---
+
+## Error Handling
+
+- Missing API keys: exit with message listing which env vars are required
+- Clone failure: exit with the git error
+- Empty or non-code repository: exit with clear message
+- AI pass failure: log the error, skip the pass, continue with remaining passes, note skipped passes in `meta`
+- Partial results are acceptable — always write output if any analysis succeeded

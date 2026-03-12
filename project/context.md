@@ -13,3 +13,105 @@ Project created via doa script. Stack: go. GitHub: github.com/brentrockwood/mri 
 
 EOF
 
+
+---
+date: 2026-03-11T19:39:05-0400
+hash: pv0ho7yT3TwIBUzYCFgkovpmKa1TR2qpBsqSXZygYKM=
+agent: HUMAN
+model: HUMAN
+startCommit: 82e6594bcc0989e8e2ed5e99ae1d81cbdc91321b
+---
+
+Added project file.
+
+EOF
+
+
+---
+date: 2026-03-11T19:51:17-0400
+hash: +PkQ7kNhjAIm8vdDQD7dO6DlI5l6Bxo7Bk+RatZz9Eg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 82e6594bcc0989e8e2ed5e99ae1d81cbdc91321b
+---
+
+Implemented Phase 1 (Ingestion) of repo-mri. Branch: phase-1-ingestion.
+
+Files created:
+- go.mod (10 lines): module github.com/brentrockwood/mri, go 1.23, cobra v1.8.1
+- schema/analysis.go (87 lines): all canonical data types (Analysis, Meta, Repo, Module, Dependency, Risk, File, Subsystem)
+- internal/ingestion/language.go (46 lines): DetectLanguage() — 32 extensions mapped to canonical language names
+- internal/ingestion/clone.go (32 lines): Clone() — shells out to git clone --depth 1, returns cleanup func
+- internal/ingestion/walker.go (120 lines): Walk() — skips .git, node_modules, vendor, etc.; counts lines per file
+- internal/ingestion/imports.go (175 lines): ParseImports() — Go AST for .go, regex for Python, JS/TS, Java
+- internal/ingestion/ingestion.go (243 lines): Ingest() — orchestrates clone→walk→parse→build dependency graph
+- cmd/repo-mri/main.go (84 lines): Cobra CLI with analyze subcommand; writes .repo-mri/analysis.json
+- internal/ingestion/language_test.go (62 lines): table-driven tests for DetectLanguage
+- internal/ingestion/walker_test.go (143 lines): table-driven tests for Walk using t.TempDir()
+- internal/ingestion/imports_test.go (199 lines): table-driven tests for ParseImports (Go, Python, JS, TS, Java)
+
+All tests pass: go test -race -count=1 ./...
+go vet clean. goimports clean. go build clean.
+go mod tidy resolved: cobra v1.8.1, mousetrap v1.1.0 (indirect), pflag v1.0.5 (indirect).
+No secrets. No deviations from spec.
+
+EOF
+
+
+---
+date: 2026-03-11T19:53:11-0400
+hash: 0GLru+D640f5LUlUcYK70uy/+DeZ4e6uRGXSgLTIBik=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 9e1fcd2df0ba7a529c9c39ae7464c787eefd4fba
+---
+
+Phase 1 (Ingestion) implemented on branch phase-1-ingestion.
+
+Created: go.mod (github.com/brentrockwood/mri, go1.23, cobra v1.8.1), schema/analysis.go (all canonical types), internal/ingestion/{language,clone,walker,imports,ingestion}.go, cmd/repo-mri/main.go, plus table-driven tests for language/walker/imports.
+
+Pipeline: Ingest(ctx, source) accepts GitHub URL or local path, clones via git clone --depth 1 if remote, walks tree skipping hidden/vendor/node_modules, detects language by extension (32 types), parses imports (Go AST + regex for Python/JS/TS/Java), builds module map and dependency graph. CLI analyze subcommand writes .repo-mri/analysis.json.
+
+All tests pass (go test -race ./...), go vet clean, goimports clean, builds successfully.
+
+Next: Phase 2 — Static Analysis (dependency graph metrics, file sizes, cyclomatic complexity, most-imported files, deepest dependency chains).
+
+EOF
+
+
+---
+date: 2026-03-11T20:09:35-0400
+hash: cTkyAcjod8+wgmJ1VmNhc8D4Xcj3xOjRKzb/CwUGmpU=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 270f6a9a6bbe323deba8d8f07cc1c1104fd04cd8
+---
+
+send 'er gate passed for phase-1-ingestion. Fixed 6 MEDIUM gosec findings (no HIGH): tightened dir perms to 0o750, file perms to 0o600, replaced //nolint:gosec with // #nosec annotations. gosec: 0 issues, goimports: clean, go vet: clean, golangci-lint: clean, go test -race: pass, go build: OK. Branch: phase-1-ingestion.
+
+EOF
+
+
+---
+date: 2026-03-12T03:59:16-0400
+hash: 47wrn+j1dYvSr4lxFadKXazaFv6dtXTIImH8CFaBdVA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 36994ff37e35cd02005a4f4766afa7ad24e06843
+---
+
+Fixed four CodeRabbit findings in internal/ingestion and one lint issue in cmd/repo-mri. Branch: phase-1-ingestion.
+
+Changes:
+- imports.go: guard strings.Fields(part)[0] against panic on whitespace-only splits
+- walker.go: exclude root path from hidden-dir skip check so dotfolder roots are not silently skipped
+- ingestion.go: derive repoName from source URL for remote repos (parse last URL path segment, strip .git), fall back to filepath.Base(root) for local
+- walker_test.go: replace dead-code ctx.Err()==nil check with errors.Is(err, ctx.Err())
+- cmd/repo-mri/main.go: assign _, _ for fmt.Fprintf return values to satisfy errcheck lint rule
+
+All send 'er gates passed: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race -count=1 (pass), go build (clean).
+
+Note: retroactive entry — context entries were missed for the two preceding interactions in this session. DOA skips acknowledged per troubleshooting section.
+
+EOF
+
