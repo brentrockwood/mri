@@ -303,3 +303,16 @@ send 'er gate passed for Phase 4. Branch: phase-4-ai-passes. gosec: 0 issues. go
 
 EOF
 
+
+---
+date: 2026-03-12T09:24:01-0400
+hash: V2RnWpE5HI8UFkT2NkdH/MNdWDWrJK899dWJ11mWAs8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 49fed2c7458702fc20d78ec48757d7b813b23b72
+---
+
+Phase 5 aggregation implemented. Branch: phase-5-aggregation. Created internal/aggregation package with Aggregate() function: deduplicates risks by file+type (keeping higher confidence), computes file risk scores using severity weights (high=1.0, medium=0.5, low=0.25) times confidence capped at 1.0, computes module risk scores as mean across all module files, and sorts modules descending by risk score (ties broken alphabetically). Wired into cmd/repo-mri/main.go after findings conversion block and before JSON write. Added 13 table-driven tests covering all specified scenarios. All tests pass (go test -race -count=1 ./...), golangci-lint clean, go vet clean, go build clean.
+
+EOF
+

@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/brentrockwood/mri/internal/aggregation"
 	"github.com/brentrockwood/mri/internal/analysis"
 	"github.com/brentrockwood/mri/internal/ingestion"
 	"github.com/brentrockwood/mri/internal/providers"
@@ -112,7 +113,12 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		if len(skipped) > 0 {
 			result.Analysis.Meta.SkippedPasses = append(result.Analysis.Meta.SkippedPasses, skipped...)
 		}
+	}
 
+	// Deduplicate risks and compute risk scores for files and modules.
+	aggregation.Aggregate(&result.Analysis)
+
+	if provider != nil {
 		// Print findings summary.
 		high, medium, low := countBySeverity(result.Analysis.Risks)
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Findings:  %d (%d high, %d medium, %d low)\n",
