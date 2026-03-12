@@ -18,9 +18,15 @@ func graphMetrics(deps []schema.Dependency, modules []schema.Module) (inDeg map[
 		inDeg[m.ID] = 0
 	}
 
-	// Build adjacency list and count in-degrees.
+	// Build adjacency list and count in-degrees, deduplicating edges.
 	adj := make(map[string][]string, len(modules))
+	seen := make(map[string]bool, len(deps))
 	for _, d := range deps {
+		key := d.From + "\x00" + d.To
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
 		adj[d.From] = append(adj[d.From], d.To)
 		inDeg[d.To]++
 	}
@@ -72,8 +78,11 @@ func graphMetrics(deps []schema.Dependency, modules []schema.Module) (inDeg map[
 }
 
 // MostImported returns up to n modules sorted by import count (descending).
-// Modules with zero imports are excluded.
+// Modules with zero imports are excluded. Returns nil for n <= 0.
 func MostImported(modules []schema.Module, n int) []schema.Module {
+	if n <= 0 {
+		return nil
+	}
 	// Copy to avoid mutating the original slice order.
 	ranked := make([]schema.Module, 0, len(modules))
 	for _, m := range modules {

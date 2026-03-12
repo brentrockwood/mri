@@ -75,7 +75,9 @@ func (v *ccVisitor) Visit(node ast.Node) ast.Visitor {
 var rePythonCC = regexp.MustCompile(`\b(if|elif|for|while|except|with|and|or)\b`)
 
 // reJSCC matches JavaScript/TypeScript branching keywords and logical operators.
-var reJSCC = regexp.MustCompile(`\b(if|else\s+if|for|while|do|switch|catch)\b|&&|\|\||\?[^:]`)
+// \?\? matches nullish coalescing; (?:\?(?:[^.?]|$)) matches ternary ? while
+// excluding optional chaining ?. and nullish coalescing ??.
+var reJSCC = regexp.MustCompile(`\b(if|else\s+if|for|while|do|switch|catch)\b|&&|\|\||\?\?|\?(?:[^.?]|$)`)
 
 // reCLikeCC matches C-like language branching keywords and logical operators.
 var reCLikeCC = regexp.MustCompile(`\b(if|else\s+if|for|while|do|switch|catch|case)\b|&&|\|\|`)

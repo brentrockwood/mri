@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -99,6 +100,9 @@ func TestAnalyze_GraphMetricsWired(t *testing.T) {
 
 func TestAnalyze_ContextCancelled(t *testing.T) {
 	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	a := &schema.Analysis{
 		Files: []schema.File{
 			{Path: "a.go", Module: "root", Language: "go"},
@@ -106,7 +110,8 @@ func TestAnalyze_ContextCancelled(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if err := Analyze(ctx, root, a); err == nil {
-		t.Error("expected error from cancelled context")
+	err := Analyze(ctx, root, a)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected context.Canceled, got %v", err)
 	}
 }

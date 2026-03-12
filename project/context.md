@@ -210,3 +210,16 @@ send 'er gate passed for Phase 2. Branch: phase-2-static-analysis. gosec: 0 issu
 
 EOF
 
+
+---
+date: 2026-03-12T06:59:24-0400
+hash: ivRTEIqDI0A+HzcKhHvb8MQrDqfZ95SeKSqUeSj+DCs=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 33e485ce716b932621b7fcee5398c47e1a6f2a7b
+---
+
+CodeRabbit fixes applied. Branch: phase-2-static-analysis. 10 findings, all valid, all fixed: devcontainer image tag, trufflehog exclude-paths (temp file), reJSCC regex (optional chaining false positive), ContextCancelled test (errors.Is + write file), MostImported n<=0 guard, Java wildcard import regex, float epsilon in tests, fzf idempotency, graph duplicate-edge deduplication, CLI help text accuracy. All gates pass.
+
+EOF
+

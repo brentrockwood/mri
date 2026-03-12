@@ -121,9 +121,12 @@ fi
 echo "Running Trufflehog..."
 
 if command -v trufflehog &>/dev/null; then
+  TRUFFLEHOG_EXCLUDE=$(mktemp)
+  echo ".git" > "$TRUFFLEHOG_EXCLUDE"
   TRUFFLEHOG_OUT=$(trufflehog filesystem "$PROJECT_ROOT" \
-    --exclude-paths="$PROJECT_ROOT/.git" \
+    --exclude-paths="$TRUFFLEHOG_EXCLUDE" \
     --json 2>/dev/null || true)
+  rm -f "$TRUFFLEHOG_EXCLUDE"
 
   if [ -n "$TRUFFLEHOG_OUT" ]; then
     echo -e "${RED}✗ Trufflehog found potential secrets:${NC}"

@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"math"
 	"os"
 	"testing"
 )
@@ -86,9 +87,10 @@ func TestNormalizeComplexity(t *testing.T) {
 		{50, 1.0},
 		{100, 1.0},
 	}
+	const eps = 1e-9
 	for _, c := range cases {
 		got := normalizeComplexity(c.raw)
-		if got != c.want {
+		if math.Abs(got-c.want) > eps {
 			t.Errorf("normalizeComplexity(%d) = %f, want %f", c.raw, got, c.want)
 		}
 	}

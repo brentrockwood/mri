@@ -46,7 +46,8 @@ func newAnalyzeCmd() *cobra.Command {
 
 It clones remote repositories to a temporary directory, walks the file tree,
 detects languages, parses import statements, and writes the results to
-.repo-mri/analysis.json relative to the current working directory.`,
+.repo-mri/analysis.json under the repository root (for cloned repos this is
+the temporary clone directory).`,
 		Args: cobra.ExactArgs(1),
 		RunE: runAnalyze,
 	}
