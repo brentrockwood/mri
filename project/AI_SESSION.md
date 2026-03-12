@@ -286,3 +286,17 @@ Added TestModuleForFile_PathBoundary. All tests pass, lint clean.
 send 'er gate: gosec 0, goimports clean, go vet clean, golangci-lint clean, go test -race all pass, go build clean. Awaiting push confirmation.
 
 ---
+
+## [2026-03-12T17:28:14-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `af8e13b` | **sha256**: `56dd4c0e1177`
+
+Merged. Proceed with phase 7a.
+
+---
+
+## [2026-03-12T17:31:56-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `af8e13b` | **sha256**: `2858b70743bc`
+
+Phase 7a implementation complete. contextSetter interface, repoPreamble constant, dynamic language list in buildUserMessage. Before/after measurement: 8 → 12 findings. Preamble did not suppress #nosec false positives. Awaiting human review before merge per spec.
+
+---

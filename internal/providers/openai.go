@@ -12,7 +12,14 @@ const openaiModel = "gpt-4o"
 
 // OpenAIProvider implements AnalysisProvider using the OpenAI API.
 type OpenAIProvider struct {
-	client *openai.Client
+	client    *openai.Client
+	languages []string
+}
+
+// SetAnalysisContext stores repo-level metadata used to build context-aware
+// prompts. Call this before running passes to reduce false positives.
+func (p *OpenAIProvider) SetAnalysisContext(languages []string) {
+	p.languages = languages
 }
 
 // NewOpenAIProvider constructs an OpenAIProvider authenticated with key.
@@ -31,7 +38,7 @@ func (p *OpenAIProvider) Model() string { return openaiModel }
 // Completions API and parses the response as a JSON array of Finding values.
 func (p *OpenAIProvider) RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error) {
 	systemPrompt := buildSystemPrompt(pass)
-	userText := buildUserMessage(pass, chunks)
+	userText := buildUserMessage(pass, chunks, p.languages)
 
 	resp, err := p.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:     openai.ChatModel(openaiModel),

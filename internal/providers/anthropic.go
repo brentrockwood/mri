@@ -12,9 +12,24 @@ import (
 
 const anthropicModel = "claude-sonnet-4-20250514"
 
+// repoPreamble is the static portion of the context-aware prompt preamble.
+// It tells the model which patterns are intentional in this codebase so they
+// are not surfaced as false-positive findings.
+const repoPreamble = `CONTEXT: This is a CLI tool. The following patterns are intentional design choices and must NOT be reported as findings:
+- Non-fatal error handling: errors logged to stderr without aborting the pipeline are deliberate (the pipeline is designed to produce partial results on failure).
+- Lines annotated with #nosec have been manually reviewed and accepted; do not report the annotated issue.
+- Calling os.Exit from main-package code is expected in a CLI tool.`
+
 // AnthropicProvider implements AnalysisProvider using the Anthropic API.
 type AnthropicProvider struct {
-	client *anthropic.Client
+	client    *anthropic.Client
+	languages []string
+}
+
+// SetAnalysisContext stores repo-level metadata used to build context-aware
+// prompts. Call this before running passes to reduce false positives.
+func (p *AnthropicProvider) SetAnalysisContext(languages []string) {
+	p.languages = languages
 }
 
 // NewAnthropicProvider constructs an AnthropicProvider authenticated with key.
@@ -33,7 +48,7 @@ func (p *AnthropicProvider) Model() string { return anthropicModel }
 // Messages API and parses the response as a JSON array of Finding values.
 func (p *AnthropicProvider) RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error) {
 	systemPrompt := buildSystemPrompt(pass)
-	userText := buildUserMessage(pass, chunks)
+	userText := buildUserMessage(pass, chunks, p.languages)
 
 	resp, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(anthropicModel),
@@ -104,8 +119,14 @@ Return [] if no issues are found.`
 }
 
 // buildUserMessage formats chunks into a user message for the given pass.
-func buildUserMessage(pass PassType, chunks []FileChunk) string {
+// When languages is non-empty, a context-aware preamble is prepended to
+// reduce false-positive findings for intentional patterns.
+func buildUserMessage(pass PassType, chunks []FileChunk, languages []string) string {
 	var sb strings.Builder
+	if len(languages) > 0 {
+		sb.WriteString(repoPreamble)
+		fmt.Fprintf(&sb, "\nLanguages detected in this repository: %s.\n\n", strings.Join(languages, ", "))
+	}
 	fmt.Fprintf(&sb, "Perform a %s analysis on the following content:\n\n", pass)
 	for _, c := range chunks {
 		fmt.Fprintf(&sb, "=== FILE: %s (%s) ===\n%s\n\n", c.Path, c.Language, c.Content)

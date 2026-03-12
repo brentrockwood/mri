@@ -16,6 +16,12 @@ const (
 	chunkCharLimit = 80_000
 )
 
+// contextSetter is an optional interface implemented by providers that can
+// accept repo-level context for building more accurate prompts.
+type contextSetter interface {
+	SetAnalysisContext(languages []string)
+}
+
 // RunPasses executes the architecture, bug, and security analysis passes using
 // provider and returns the combined findings. Files are read from root. Any
 // passes that fail are skipped; their names are appended to the returned
@@ -23,6 +29,11 @@ const (
 func RunPasses(ctx context.Context, root string, a *schema.Analysis, provider providers.AnalysisProvider) ([]providers.Finding, []string, error) {
 	var allFindings []providers.Finding
 	var skipped []string
+
+	// Provide repo context to providers that support it.
+	if cs, ok := provider.(contextSetter); ok {
+		cs.SetAnalysisContext(a.Repo.Languages)
+	}
 
 	// --- architecture pass ---
 	archChunks := buildArchChunk(a)

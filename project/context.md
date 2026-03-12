@@ -488,3 +488,32 @@ send 'er gate passed for Phase 7. Branch: phase-7-cli-hardening. gosec: 0 issues
 
 EOF
 
+
+---
+date: 2026-03-12T17:31:52-0400
+hash: K0gDTdbtYux05p1xcsiJZgWj/I7f2xhg4g+YrAAZ8jk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: af8e13b076e0bfefcf0c767fca8469bbb2981e86
+---
+
+Phase 7a: Prompt tuning implementation complete. Branch: phase-7a-prompt-tuning.
+
+Mechanism: contextSetter interface (unexported, consumer-side in passes.go). RunPasses calls
+SetAnalysisContext(a.Repo.Languages) via type assertion before any pass. Both AnthropicProvider
+and OpenAIProvider implement SetAnalysisContext, storing languages and passing them to
+buildUserMessage. repoPreamble constant defined in anthropic.go covers: CLI tool note,
+non-fatal error handling, #nosec annotations. Dynamic portion appends detected languages.
+
+Before/after measurement (against this repo):
+  Before: 8 findings (1H 4M 3L)
+  After:  12 findings (2H 6M 4L)
+
+Preamble did not reduce false-positive rate — clone.go injection still fires as HIGH despite
+explicit #nosec instruction, count increased rather than decreased. LLM variance makes single-run
+comparison noisy. Implementation is correct; preamble text may need further tuning.
+
+Per Phase 7a spec: human review required before merge. Awaiting decision.
+
+EOF
+
