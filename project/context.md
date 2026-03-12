@@ -169,3 +169,31 @@ send 'er gate passed: gosec (0), goimports (clean), go vet (clean), golangci-lin
 
 EOF
 
+
+---
+date: 2026-03-12T05:05:51-0400
+hash: RojZbPIDLqsFu4L7LZGm+YnAkb2lsVyLgit2sExiJQQ=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 5645eaa7d492ef50d41a01dcce543641920aa500
+---
+
+Phase 2 Static Analysis implemented. Branch: phase-2-static-analysis.
+
+New package internal/analysis with three files:
+- analysis.go: Analyze() entry point — populates schema.File.Size, schema.File.Complexity, schema.Module.ComplexityScore, schema.Module.ImportCount, schema.Meta.MaxChainDepth
+- complexity.go: cyclomaticComplexity() — Go AST-based for .go files; regex keyword counting for Python/JS/TS/Java/C-like
+- graph.go: graphMetrics() (in-degree + longest path via DFS with cycle breaking); MostImported() helper
+
+Schema additions:
+- schema.File.Size int64 (file size in bytes)
+- schema.Module.ImportCount int (in-degree)
+- schema.Meta.MaxChainDepth int (longest dep chain)
+
+CLI updated: prints Max chain depth and top-3 most-imported modules.
+
+Tests: 13 new test cases across analysis_test.go, complexity_test.go, graph_test.go.
+gosec: 0. goimports: clean. go vet: clean. golangci-lint: 0. go test -race: pass. go build: clean.
+
+EOF
+
