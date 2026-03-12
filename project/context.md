@@ -419,3 +419,72 @@ AREAS FOR IMPROVEMENT:
 
 EOF
 
+
+---
+date: 2026-03-12T16:37:27-0400
+hash: OgFbLvCD6v4B1qIs4YovolM/hcxsmompJZjb4bhEZxs=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2b944858378ba66b2f8a7a05bcb081a1cc7a9057
+---
+
+Phase 7 CLI hardening — all 5 items complete. Branch: phase-7-cli-hardening.
+
+7a: buildFileChunks now skips _test.go, *.test.ts/js, *.spec.ts/js, *_spec.rb files.
+7b: Added chunkCharLimit=80_000; chunks flush on char limit before file count limit.
+7c: --timeout flag (default 5m) on analyze cmd; ctx derived from cmd.Context() + WithTimeout; deferred cancel on all paths.
+7d: moduleForFile now tracks longest-prefix match, fixing false attribution on overlapping paths (e.g. src/pay vs src/payment).
+7e: GraphSummaryPath constant defined in providers/provider.go; "graph-summary" and "graph" literals replaced across passes.go and main.go.
+
+New tests: TestBuildFileChunks_ExcludesTestFiles, TestBuildFileChunks_CharLimitSplits, TestModuleForFile_LongestPrefixMatch, TestModuleForFile_GraphSummary, TestRunAnalyze_CancelledContext.
+All tests pass (race detector). golangci-lint: clean. go vet: clean. go build: clean.
+
+EOF
+
+
+---
+date: 2026-03-12T17:14:07-0400
+hash: H7qL8m4MN+oqH2Bn0Hzj3At1QC6qe0GLrJcA5U8VRA4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: a1c96f9527779a993950fffadf95d03d804eaff8
+---
+
+Self-review (analysis.json) and CodeRabbit review of Phase 7. Branch: phase-7-cli-hardening.
+
+Fixed three real issues:
+
+1. moduleForFile path boundary: strings.HasPrefix("src/payment/file.go", "src/pay") is true;
+   added hasPathPrefix helper that requires the match ends at '/' or end-of-string.
+
+2. "graph" alias restored: AI models may return "graph" instead of "graph-summary" for
+   architecture findings. Re-added the alias check with explanatory comment.
+
+3. Output directory mode 0o750 -> 0o700 (owner-only); removed stale #nosec G301 annotation.
+
+Skipped as false positives:
+- risk_002 clone.go injection: URL passed as exec arg, not shell; #nosec G204 in place
+- risk_004 API key validation: non-empty check is correct; format validation premature
+- risk_005 fileSize bounds: paths from WalkDir
+- risk_006 mktemp: standard practice, confidence 0.3
+- CodeRabbit AI_SESSION.md timestamps: append-only artifact, cannot edit
+- CodeRabbit project.md: write-locked
+
+New test: TestModuleForFile_PathBoundary.
+All tests pass. Lint clean.
+
+EOF
+
+
+---
+date: 2026-03-12T17:18:41-0400
+hash: oX4bXE8gpt4ujZZfOVT6N3D4zBebdUIj8ctPjhQM74M=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2d02fa915aa0517bdaa959bdf20c2d5ea3f6726a
+---
+
+send 'er gate passed for Phase 7. Branch: phase-7-cli-hardening. gosec: 0 issues. goimports: clean. go vet: clean. golangci-lint: clean. go test -race: all pass. go build: clean. Ready to push and open PR.
+
+EOF
+

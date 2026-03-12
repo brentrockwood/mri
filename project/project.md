@@ -290,3 +290,110 @@ Type values: `architecture`, `bug`, `security`
 - Empty or non-code repository: exit with clear message
 - AI pass failure: log the error, skip the pass, continue with remaining passes, note skipped passes in `meta`
 - Partial results are acceptable — always write output if any analysis succeeded
+---
+
+## Post-Phase-6 Improvements
+
+*Human-authorized addition. Phases 7, 7a, 8, and 9 must be completed before UI work begins. Phase 10 is deferred pending a spike.*
+
+---
+
+### Phase 7 — CLI Hardening
+
+Low-risk, high-impact fixes. No schema changes. Complete all items before moving to Phase 7a.
+
+**7a — Exclude test files from AI passes**
+
+- In `internal/analysis/passes.go`, filter `buildFileChunks` to skip files matching test file patterns
+- Go: `strings.HasSuffix(f.Path, "_test.go")`
+- JS/TS: `*.test.ts`, `*.test.js`, `*.spec.ts`, `*.spec.js`
+- Ruby: `*_spec.rb`
+- Test files remain in static analysis (walker, complexity); exclusion applies only to `buildFileChunks`
+- Add test case: verify `_test.go` files do not appear in any chunk returned by `buildFileChunks`
+
+**7b — Token budget enforcement in chunking**
+
+- Replace the fixed 50-file chunk limit with a dual constraint: max 50 files OR max 80,000 characters of content per chunk, whichever is hit first
+- 80k chars ≈ ~20k tokens, well within model context with headroom for system prompt and response
+- `chunkSize` constant remains as the file-count ceiling; add `chunkCharLimit = 80_000` constant alongside it
+- Add test case covering a chunk that hits the character limit before the file limit
+
+**7c — Context timeout on AI pipeline**
+
+- Add `--timeout` flag to the `analyze` command (default: `5m`, type: `time.Duration`)
+- Wrap `context.Background()` with `context.WithTimeout` before passing to `ingestion.Ingest` and downstream
+- Deferred cancel must be called on all exit paths
+- Add test: verify a pre-cancelled context surfaces as an error from `runAnalyze`
+
+**7d — Fix `moduleForFile` longest-prefix matching**
+
+- Current implementation returns the first module whose `Path` is a prefix of the file path; overlapping paths (e.g. `src/pay` and `src/payment`) can match the wrong module
+- Fix: iterate all modules, track the match with the longest `m.Path`, return that
+- Add table-driven test cases covering overlapping path prefixes
+- This item is a prerequisite for Phase 8
+
+**7e — Make `graph-summary` a shared constant**
+
+- Define `const GraphSummaryPath = "graph-summary"` in `internal/providers/provider.go`
+- Replace all string literals `"graph-summary"` and `"graph"` in `passes.go` and `main.go` with the constant
+- No behaviour change; eliminates silent drift risk if the synthetic chunk name ever changes
+
+---
+
+### Phase 7a — Prompt Tuning
+
+*Prerequisite: Phase 7 must be merged before beginning Phase 7a. This phase requires human evaluation of false-positive rate before and after — do not merge without that review.*
+
+- Prepend a contextual preamble to `buildUserMessage` describing the repo type and intentional patterns
+- Preamble is derived from `schema.Analysis` at call time: language list, a note that this is a CLI tool, and explicit acknowledgement that non-fatal error handling and `#nosec` annotations are intentional
+- Define the static portion as a constant in `anthropic.go`; append the dynamic portion (languages) at call time
+- Measurement: run `repo-mri analyze .` before and after; compare finding counts and false-positive rate; human reviews output before merge
+
+---
+
+### Phase 8 — Go Package-Level Module Granularity
+
+*Prerequisite: Phase 7d (longest-prefix fix) must be merged before beginning Phase 8.*
+
+The most impactful CLI improvement before UI work. Go import paths are already package-scoped in the AST output; only the module-assignment logic in ingestion needs to change.
+
+- In `internal/ingestion/ingestion.go`, change module assignment for Go files: use the repo-relative directory path as the module ID rather than the top-level directory name
+- `internal/ingestion` and `internal/analysis` become distinct modules instead of both collapsing into `internal`
+- Module ID = repo-relative directory path (e.g. `internal/ingestion`); Module Path = same value
+- Dependency edges are already at import-path granularity from the AST parser; no changes needed to `imports.go`
+- Non-Go repos are unaffected; the existing top-level directory heuristic remains the fallback for all other languages
+- Update `ingestion_test.go` with a Go repo fixture that verifies package-level module splitting
+- Schema change: none required; `Module.ID` and `Module.Path` already support arbitrary strings
+- Bump `SchemaVersion` from `"1.0"` to `"1.1"` in `schema/analysis.go` on merge
+- Create `CHANGELOG.md` documenting the breaking change to `modules[]` and `dependencies[]` for Go repos
+
+---
+
+### Phase 9 — Architecture Finding Target Model
+
+*Must not begin until Phase 7 is complete. No dependency on Phase 8.*
+
+- Add `TargetType string` and `TargetID string` fields to `schema.Risk`
+  - Valid `TargetType` values: `"file"`, `"module"`, `"repository"`
+  - `TargetID` is the file path, module ID, or repo name respectively
+- Architecture pass findings set `TargetType: "repository"`, `TargetID: a.Repo.Name`
+- Bug and security pass findings set `TargetType: "file"`, `TargetID: <file path>`
+- Update `report.go` to use `TargetType` for section routing rather than the `Type` field string comparison
+- Add table-driven tests covering all three target types
+- Bump `SchemaVersion` to `"1.2"` in `schema/analysis.go` on merge
+- Update `CHANGELOG.md`
+
+---
+
+### Phase 10 — Structural Analysis (Deferred)
+
+*Do not begin until UI work is underway and there is a visual consumer for the output.*
+
+Before committing to structural embeddings and a vector store (a significant new infrastructure dependency), run a spike to determine whether k-means clustering on existing static metrics — complexity score, import count, file count, dependency edge count — provides sufficient clustering signal without new dependencies.
+
+- **Spike deliverable:** a standalone script that reads `analysis.json` and outputs proposed clusters using only the data already present
+- If the spike demonstrates useful clustering: implement in-process in Go, no new dependencies
+- If the spike reveals embeddings are necessary: evaluate vector store options and reopen planning before committing to an approach
+- Structural embeddings design notes are captured in `docs/phase10-embeddings-preview.md` for reference
+
+---

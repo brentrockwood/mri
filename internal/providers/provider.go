@@ -16,6 +16,10 @@ const (
 	PassSecurity PassType = "security"
 )
 
+// GraphSummaryPath is the synthetic chunk path used by the architecture pass
+// to represent the dependency graph summary rather than a real source file.
+const GraphSummaryPath = "graph-summary"
+
 // FileChunk is a unit of content passed to a provider pass.
 type FileChunk struct {
 	// Path is the repo-relative path of the file.

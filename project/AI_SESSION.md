@@ -238,3 +238,51 @@ send 'er gate passed for Phase 6 (phase-6-report). All checks clean, CodeRabbit 
 Finally, before we finish, please report on what you think went well in this project and any areas we could improve. Report them here inline as well as in the context.md. You can push that change immediately.
 
 ---
+
+## [2026-03-12T16:33:23-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `2b94485` | **sha256**: `bbefff14f6a7`
+
+Phase 7 is done with planning. Do you have any questions?
+
+---
+
+## [2026-03-12T16:33:23-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `2b94485` | **sha256**: `f01847dfc941`
+
+Proceed
+
+---
+
+## [2026-03-12T16:37:33-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `2b94485` | **sha256**: `ee823ca19379`
+
+Phase 7 CLI hardening complete. Implemented all 5 items:
+- 7a: test file exclusion from buildFileChunks
+- 7b: 80k char limit per chunk alongside 50-file limit
+- 7c: --timeout flag (5m default) with context propagation
+- 7d: longest-prefix moduleForFile fix
+- 7e: GraphSummaryPath constant replacing all string literals
+
+5 new tests added. All tests pass with race detector. Lint and build clean.
+
+---
+
+## [2026-03-12T17:14:11-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `a1c96f9` | **sha256**: `43d607769f29`
+
+Self-review and CodeRabbit review of Phase 7. Fixed 3 real issues:
+1. hasPathPrefix boundary check prevents src/pay matching src/payment/...
+2. "graph" AI-provider alias restored in moduleForFile
+3. Output dir mode 0o750 → 0o700
+
+Skipped 6 false positives (clone injection, API key validation, fileSize bounds, mktemp, AI_SESSION.md timestamps, project.md).
+Added TestModuleForFile_PathBoundary. All tests pass, lint clean.
+
+---
+
+## [2026-03-12T17:18:42-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `2d02fa9` | **sha256**: `0371b66cc5b7`
+
+send 'er gate: gosec 0, goimports clean, go vet clean, golangci-lint clean, go test -race all pass, go build clean. Awaiting push confirmation.
+
+---
