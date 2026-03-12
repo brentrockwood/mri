@@ -152,3 +152,20 @@ gosec: 0 issues. goimports: clean. go vet: clean. golangci-lint: 0 issues. go te
 
 EOF
 
+
+---
+date: 2026-03-12T04:57:18-0400
+hash: ncaPBNOrN0rlE/lB5alck2clbJh9d0ofAxh3uuH1Feg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: ce14b0126743c0447658f8b8e9f63000db67a78e
+---
+
+Fix Languages output formatting in CLI. Branch: phase-1-ingestion.
+
+cmd/repo-mri/main.go: replaced %v with strings.Join(a.Repo.Languages, ", ") so output reads "go, shell" instead of "[go shell]". Added "strings" import.
+
+send 'er gate passed: gosec (0), goimports (clean), go vet (clean), golangci-lint (0), go test -race (pass), go build (clean).
+
+EOF
+
