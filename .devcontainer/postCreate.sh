@@ -64,7 +64,9 @@ ok "zoxide installed"
 
 # ── fzf ──────────────────────────────────────────────────────────────────────
 step "Installing fzf"
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+if [ ! -d "$HOME/.fzf" ]; then
+  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+fi
 ~/.fzf/install --all --no-bash --no-fish
 ok "fzf installed"
 

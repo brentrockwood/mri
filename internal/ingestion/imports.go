@@ -134,8 +134,8 @@ func parseJSImports(path string) ([]string, error) {
 	return imports, nil
 }
 
-// reJavaImport matches "import com.example.Foo;" statements.
-var reJavaImport = regexp.MustCompile(`^import\s+(static\s+)?([\w.]+)\s*;`)
+// reJavaImport matches "import com.example.Foo;" and wildcard "import java.util.*;" statements.
+var reJavaImport = regexp.MustCompile(`^import\s+(static\s+)?([\w.*]+)\s*;`)
 
 // parseJavaImports extracts import statements from a Java file.
 func parseJavaImports(path string) ([]string, error) {

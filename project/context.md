@@ -169,3 +169,57 @@ send 'er gate passed: gosec (0), goimports (clean), go vet (clean), golangci-lin
 
 EOF
 
+
+---
+date: 2026-03-12T05:05:51-0400
+hash: RojZbPIDLqsFu4L7LZGm+YnAkb2lsVyLgit2sExiJQQ=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 5645eaa7d492ef50d41a01dcce543641920aa500
+---
+
+Phase 2 Static Analysis implemented. Branch: phase-2-static-analysis.
+
+New package internal/analysis with three files:
+- analysis.go: Analyze() entry point — populates schema.File.Size, schema.File.Complexity, schema.Module.ComplexityScore, schema.Module.ImportCount, schema.Meta.MaxChainDepth
+- complexity.go: cyclomaticComplexity() — Go AST-based for .go files; regex keyword counting for Python/JS/TS/Java/C-like
+- graph.go: graphMetrics() (in-degree + longest path via DFS with cycle breaking); MostImported() helper
+
+Schema additions:
+- schema.File.Size int64 (file size in bytes)
+- schema.Module.ImportCount int (in-degree)
+- schema.Meta.MaxChainDepth int (longest dep chain)
+
+CLI updated: prints Max chain depth and top-3 most-imported modules.
+
+Tests: 13 new test cases across analysis_test.go, complexity_test.go, graph_test.go.
+gosec: 0. goimports: clean. go vet: clean. golangci-lint: 0. go test -race: pass. go build: clean.
+
+EOF
+
+
+---
+date: 2026-03-12T06:34:54-0400
+hash: NOaTlwS6VnVYVRYo28ojbhSdo2Q+b8QO7D7w0an2wGM=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 90edb8aa6bb0e416b44e75e447be798c69397211
+---
+
+send 'er gate passed for Phase 2. Branch: phase-2-static-analysis. gosec: 0 issues. goimports: clean. go vet: clean. golangci-lint: 0 issues. go test -race -count=1: pass. go build: clean. Ready to push and open PR.
+
+EOF
+
+
+---
+date: 2026-03-12T06:59:24-0400
+hash: ivRTEIqDI0A+HzcKhHvb8MQrDqfZ95SeKSqUeSj+DCs=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 33e485ce716b932621b7fcee5398c47e1a6f2a7b
+---
+
+CodeRabbit fixes applied. Branch: phase-2-static-analysis. 10 findings, all valid, all fixed: devcontainer image tag, trufflehog exclude-paths (temp file), reJSCC regex (optional chaining false positive), ContextCancelled test (errors.Is + write file), MostImported n<=0 guard, Java wildcard import regex, float epsilon in tests, fzf idempotency, graph duplicate-edge deduplication, CLI help text accuracy. All gates pass.
+
+EOF
+

@@ -28,6 +28,8 @@ type Meta struct {
 	Provider           string   `json:"provider,omitempty"`
 	AnalysisDurationMS int64    `json:"analysis_duration_ms"`
 	SkippedPasses      []string `json:"skipped_passes,omitempty"`
+	// MaxChainDepth is the length of the longest module dependency chain. Set by Phase 2.
+	MaxChainDepth int `json:"max_chain_depth,omitempty"`
 }
 
 // Repo holds repository-level summary data.
@@ -47,6 +49,8 @@ type Module struct {
 	FileCount       int     `json:"file_count"`
 	RiskScore       float64 `json:"risk_score"`
 	ComplexityScore float64 `json:"complexity_score"`
+	// ImportCount is the number of other modules that import this module. Set by Phase 2.
+	ImportCount int `json:"import_count,omitempty"`
 }
 
 // Dependency represents a directed import relationship between modules.
@@ -72,10 +76,12 @@ type Risk struct {
 
 // File holds per-file metrics.
 type File struct {
-	Path       string  `json:"path"`
-	Module     string  `json:"module"`
-	Language   string  `json:"language"`
-	Lines      int     `json:"lines"`
+	Path     string `json:"path"`
+	Module   string `json:"module"`
+	Language string `json:"language"`
+	Lines    int    `json:"lines"`
+	// Size is the file size in bytes. Set by Phase 2.
+	Size       int64   `json:"size,omitempty"`
 	Complexity float64 `json:"complexity"`
 	RiskScore  float64 `json:"risk_score"`
 }

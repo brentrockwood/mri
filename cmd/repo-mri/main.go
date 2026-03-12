@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/brentrockwood/mri/internal/analysis"
 	"github.com/brentrockwood/mri/internal/ingestion"
 )
 
@@ -45,7 +46,8 @@ func newAnalyzeCmd() *cobra.Command {
 
 It clones remote repositories to a temporary directory, walks the file tree,
 detects languages, parses import statements, and writes the results to
-.repo-mri/analysis.json relative to the current working directory.`,
+.repo-mri/analysis.json under the repository root (for cloned repos this is
+the temporary clone directory).`,
 		Args: cobra.ExactArgs(1),
 		RunE: runAnalyze,
 	}
@@ -66,6 +68,10 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		defer result.Cleanup()
 	}
 
+	if err := analysis.Analyze(ctx, result.RootDir, &result.Analysis); err != nil {
+		return fmt.Errorf("analyze: static analysis: %w", err)
+	}
+
 	// Determine output directory: .repo-mri/ under the repo root.
 	outDir := filepath.Join(result.RootDir, ".repo-mri")
 	if err := os.MkdirAll(outDir, 0o750); err != nil { // #nosec G301 -- output dir, not sensitive
@@ -83,11 +89,21 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	a := result.Analysis
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Repo:      %s\n", a.Repo.Name)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files:     %d\n", a.Repo.FileCount)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Modules:   %d\n", a.Repo.ModuleCount)
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Languages: %s\n", strings.Join(a.Repo.Languages, ", "))
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:    %s\n", outPath)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Repo:       %s\n", a.Repo.Name)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files:      %d\n", a.Repo.FileCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Modules:    %d\n", a.Repo.ModuleCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Languages:  %s\n", strings.Join(a.Repo.Languages, ", "))
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Max chain:  %d\n", a.Meta.MaxChainDepth)
+
+	if top := analysis.MostImported(a.Modules, 3); len(top) > 0 {
+		names := make([]string, len(top))
+		for i, m := range top {
+			names[i] = fmt.Sprintf("%s(%d)", m.ID, m.ImportCount)
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Most imported: %s\n", strings.Join(names, ", "))
+	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:     %s\n", outPath)
 
 	return nil
 }
