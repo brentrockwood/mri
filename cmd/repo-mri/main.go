@@ -14,6 +14,7 @@ import (
 
 	"github.com/brentrockwood/mri/internal/analysis"
 	"github.com/brentrockwood/mri/internal/ingestion"
+	"github.com/brentrockwood/mri/internal/providers"
 )
 
 // version, commit, and buildDate are injected at build time via -ldflags.
@@ -70,6 +71,23 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 	if err := analysis.Analyze(ctx, result.RootDir, &result.Analysis); err != nil {
 		return fmt.Errorf("analyze: static analysis: %w", err)
+	}
+
+	// Select the AI analysis provider. If no API key is configured, skip AI
+	// analysis and continue with static results only. Phase 4 will use the
+	// provider to run passes over the ingested file chunks.
+	provider, err := providers.SelectProvider(ctx)
+	if err != nil {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Notice: AI analysis unavailable (%v). Continuing with static analysis only.\n", err)
+	} else {
+		switch p := provider.(type) {
+		case *providers.AnthropicProvider:
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   Anthropic (%s)\n", p.Model())
+		case *providers.OpenAIProvider:
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   OpenAI (%s)\n", p.Model())
+		default:
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   selected\n")
+		}
 	}
 
 	// Determine output directory: .repo-mri/ under the repo root.
