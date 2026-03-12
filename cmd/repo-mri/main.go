@@ -59,7 +59,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 	// Determine output directory: .repo-mri/ under the repo root.
 	outDir := filepath.Join(result.RootDir, ".repo-mri")
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil { // #nosec G301 -- output dir, not sensitive
 		return fmt.Errorf("analyze: create output dir %s: %w", outDir, err)
 	}
 
@@ -69,7 +69,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("analyze: marshal analysis: %w", err)
 	}
 
-	if err := os.WriteFile(outPath, data, 0o644); err != nil { //nolint:gosec
+	if err := os.WriteFile(outPath, data, 0o600); err != nil { // #nosec G306 -- analysis output file
 		return fmt.Errorf("analyze: write %s: %w", outPath, err)
 	}
 

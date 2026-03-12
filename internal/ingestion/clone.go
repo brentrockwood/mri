@@ -20,8 +20,7 @@ func Clone(ctx context.Context, remoteURL string) (dir string, cleanup func(), e
 		_ = os.RemoveAll(tmp)
 	}
 
-	//nolint:gosec // remoteURL is validated by the caller as a https:// URL
-	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", remoteURL, tmp)
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", remoteURL, tmp) // #nosec G204 -- remoteURL validated as https:// by caller
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		cleanup()

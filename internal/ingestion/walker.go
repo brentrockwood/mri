@@ -105,7 +105,7 @@ func Walk(ctx context.Context, root string) ([]FileInfo, error) {
 
 // countLines returns the number of newline-delimited lines in the file at path.
 func countLines(path string) (int, error) {
-	f, err := os.Open(path) //nolint:gosec // path comes from filepath.WalkDir
+	f, err := os.Open(path) // #nosec G304 -- path sourced from filepath.WalkDir
 	if err != nil {
 		return 0, err
 	}

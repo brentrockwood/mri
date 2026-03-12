@@ -104,7 +104,7 @@ var reJSImport = regexp.MustCompile(
 
 // parseJSImports extracts import/require paths from a JS or TS file.
 func parseJSImports(path string) ([]string, error) {
-	data, err := os.ReadFile(path) //nolint:gosec
+	data, err := os.ReadFile(path) // #nosec G304 -- path sourced from Walk
 	if err != nil {
 		return nil, fmt.Errorf("ingestion imports js read %s: %w", path, err)
 	}
@@ -160,7 +160,7 @@ func parseJavaImports(path string) ([]string, error) {
 
 // readLines reads a file and returns its lines as a slice of strings.
 func readLines(path string) ([]string, error) {
-	f, err := os.Open(path) //nolint:gosec
+	f, err := os.Open(path) // #nosec G304 -- path sourced from Walk
 	if err != nil {
 		return nil, err
 	}
