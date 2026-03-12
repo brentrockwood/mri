@@ -1,140 +1,127 @@
-# mri
+# repo-mri
 
-[One or two sentences describing what this project does and why it exists.]
-
-## Features
-
-- [Feature one]
-- [Feature two]
-- [Feature three]
-
-## Future Enhancements
-
-- [Planned enhancement]
+A CLI tool that analyzes a software repository and produces a structured diagnostic report. Point it at a GitHub URL or a local path and it outputs a JSON artifact and a human-readable Markdown summary.
 
 ## Requirements
 
-- [Runtime and version, e.g. Python 3.12+, Node 20+]
-- [Any external services or credentials required]
+- Go 1.23+ (to build from source)
+- `git` (for cloning remote repositories)
 
-## Setup
+No API keys are required for Phase 1 (ingestion only). Later phases will require `REPO_MRI_ANTHROPIC_KEY` or `REPO_MRI_OPENAI_KEY`.
 
-### 1. Clone the Repository
+## Installation
+
+### Pre-built binary (recommended)
+
+Download the binary for your platform from the `dist/` directory of a release, make it executable, and move it onto your `PATH`:
 
 ```bash
-git clone https://github.com/[username]/[project].git
-cd [project]
+# macOS (Apple Silicon)
+curl -Lo repo-mri https://github.com/brentrockwood/mri/releases/latest/download/repo-mri-darwin-arm64
+chmod +x repo-mri
+sudo mv repo-mri /usr/local/bin/
+
+# macOS (Intel)
+curl -Lo repo-mri https://github.com/brentrockwood/mri/releases/latest/download/repo-mri-darwin-amd64
+chmod +x repo-mri
+sudo mv repo-mri /usr/local/bin/
+
+# Linux (amd64)
+curl -Lo repo-mri https://github.com/brentrockwood/mri/releases/latest/download/repo-mri-linux-amd64
+chmod +x repo-mri
+sudo mv repo-mri /usr/local/bin/
 ```
 
-### 2. Create Environment
+### Build and install from source
 
 ```bash
-# Python example
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Node example
-npm install
+git clone https://github.com/brentrockwood/mri.git
+cd mri
+make install        # builds and copies to /usr/local/bin/repo-mri
 ```
 
-### 3. Configure Secrets
+### Build only (no install)
 
 ```bash
-cp secrets.env.example secrets.env
-# Edit secrets.env and fill in your values
-```
-
-See `secrets.env.example` for all available configuration options with descriptions.
-
-### 4. First Run
-
-```bash
-# Example
-python main.py run --dry-run
+make build          # produces bin/repo-mri
+./bin/repo-mri --version
 ```
 
 ## Usage
 
-### Basic Usage
-
 ```bash
-# Example commands
-python main.py run
-python main.py run --limit 50
-python main.py stats
+repo-mri analyze https://github.com/org/repo
+repo-mri analyze /path/to/local/repo
+repo-mri analyze .
 ```
 
-### Dry Run Mode
+Output is written to `.repo-mri/` in the current working directory:
 
-Test without making changes:
-
-```bash
-python main.py run --dry-run
-# or set DRY_RUN=true in secrets.env
 ```
-
-### Configuration
-
-All configuration is via environment variables in `secrets.env`. See `secrets.env.example` for comprehensive documentation.
+.repo-mri/
+  analysis.json   # canonical structured artifact
+  report.md       # human-readable summary (Phase 6)
+```
 
 ## Development
 
-### Run All Checks
+### Prerequisites
+
+- Go 1.23+
+- `golangci-lint` (`brew install golangci-lint`)
+- `goimports` (`go install golang.org/x/tools/cmd/goimports@latest`)
+- `gosec` (`go install github.com/securego/gosec/v2/cmd/gosec@latest`)
+
+### Common tasks
 
 ```bash
-./scripts/run_checks.sh
+make build          # native binary → bin/repo-mri
+make test           # go test -race -count=1 ./...
+make lint           # golangci-lint run ./...
+make vet            # go vet ./...
+make fmt            # goimports -w .
+make dist           # cross-compile all platforms → dist/
+make install        # build + install to /usr/local/bin
+make clean          # remove bin/ and dist/
+make version        # print resolved version string
 ```
 
-This runs security scanning, formatting, linting, type checking, and tests in sequence.
+### Cross-compilation targets
 
-### Individual Checks
+`make dist` produces binaries for:
 
-```bash
-pytest                          # tests
-black src/ tests/               # formatting
-ruff check src/ tests/          # linting
-mypy src/                       # type checking
-./scripts/security_scan.sh      # secrets scan
-```
+| Platform | Output |
+|---|---|
+| macOS (Intel) | `dist/repo-mri-darwin-amd64` |
+| macOS (Apple Silicon) | `dist/repo-mri-darwin-arm64` |
+| Linux (amd64) | `dist/repo-mri-linux-amd64` |
+| Linux (arm64) | `dist/repo-mri-linux-arm64` |
+| Windows (amd64) | `dist/repo-mri-windows-amd64.exe` |
 
-### Automated Runs
-
-For unattended/production operation, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+All binaries are built with `CGO_ENABLED=0` (no libc dependency) and stripped of debug symbols.
 
 ## Project Structure
 
 ```
-[project]/
-├── src/                    # Application source
-├── tests/                  # Test files
-├── scripts/
-│   ├── run_checks.sh       # Run all quality checks
-│   └── security_scan.sh    # Secrets and credential scanning
-├── docs/
-│   └── DEPLOYMENT.md       # Production deployment guide
-├── project/                # Project planning and work log (not user-facing)
-│   ├── doa.md              # Development Operating Agreement
-│   ├── project.md          # Implementation plan (write-locked)
-│   ├── context.md          # Session work log
-│   └── scripts/            # Context management utilities
-├── .env.example            # Non-secret config defaults
-├── secrets.env.example     # Secret config template (copy to secrets.env)
-└── secrets.env             # Your secrets — never commit this
+repo-mri/
+├── cmd/repo-mri/       # CLI entry point
+├── internal/
+│   ├── ingestion/      # Phase 1: file walking, language detection, import parsing
+│   ├── analysis/       # Phase 2: static analysis (planned)
+│   ├── providers/      # Phase 3: AI provider wiring (planned)
+│   ├── aggregation/    # Phase 5: finding aggregation (planned)
+│   └── report/         # Phase 6: report generation (planned)
+├── schema/             # Canonical data schema
+├── scripts/            # Security scan and other utilities
+├── project/            # Planning and work log (not user-facing)
+│   ├── doa.md          # Development Operating Agreement
+│   ├── project.md      # Implementation plan (write-locked)
+│   ├── context.md      # Session work log
+│   └── scripts/        # Context management utilities
+└── Makefile
 ```
 
 ## Security
 
-- **Never commit** `secrets.env` or credential files — they are gitignored by default
-- Run `./scripts/security_scan.sh` before every push (also run by `./scripts/run_checks.sh`)
-- See `secrets.env.example` for what belongs in secrets vs. `.env`
-
-## Troubleshooting
-
-### [Common issue title]
-
-[Description and fix.]
-
-### [Another common issue]
-
-[Description and fix.]
+- Never commit secrets or API keys — load them from environment variables only
+- Run `./scripts/security_scan.sh` before each push

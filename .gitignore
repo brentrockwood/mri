@@ -82,3 +82,4 @@ notes/
 /site
 docs/_build/
 target/
+bin/

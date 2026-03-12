@@ -14,10 +14,18 @@ import (
 	"github.com/brentrockwood/mri/internal/ingestion"
 )
 
+// version, commit, and buildDate are injected at build time via -ldflags.
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildDate = "unknown"
+)
+
 func main() {
 	root := &cobra.Command{
-		Use:   "repo-mri",
-		Short: "Analyze a software repository and produce a diagnostic report",
+		Use:     "repo-mri",
+		Short:   "Analyze a software repository and produce a diagnostic report",
+		Version: fmt.Sprintf("%s (commit %s, built %s)", version, commit, buildDate),
 	}
 
 	root.AddCommand(newAnalyzeCmd())

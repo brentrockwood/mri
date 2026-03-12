@@ -1,29 +1,56 @@
 # Makefile
-# Adjust APP_NAME, MODULE, and CMD_PATH to match your project.
 
-APP_NAME  ?= $(shell basename $(CURDIR))
-MODULE    ?= $(shell go list -m 2>/dev/null || echo "module-not-initialized")
+APP_NAME  ?= repo-mri
 CMD_PATH  ?= ./cmd/$(APP_NAME)
 BIN_DIR   ?= bin
-IMAGE_TAG ?= $(APP_NAME):latest
+DIST_DIR  ?= dist
 
-.PHONY: all build test docker lint vet fmt clean help
+# Embed version info from git. Falls back to "dev" when no tags exist.
+VERSION   := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT    := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS   := -s -w \
+             -X main.version=$(VERSION) \
+             -X main.commit=$(COMMIT) \
+             -X main.buildDate=$(BUILD_DATE)
 
-## all: run vet, lint, test, and build
+# Cross-compilation targets: os/arch pairs
+PLATFORMS := darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64
+
+.PHONY: all build dist install version test lint vet fmt clean help
+
+## all: vet, lint, test, build
 all: vet lint test build
 
-## build: compile the binary to bin/<APP_NAME>
+## build: compile native binary to bin/<APP_NAME>
 build:
 	@mkdir -p $(BIN_DIR)
-	go build -o $(BIN_DIR)/$(APP_NAME) $(CMD_PATH)
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) $(CMD_PATH)
+
+## dist: cross-compile for all platforms to dist/
+dist:
+	@mkdir -p $(DIST_DIR)
+	$(foreach PLATFORM,$(PLATFORMS), \
+		$(eval OS   := $(word 1,$(subst /, ,$(PLATFORM)))) \
+		$(eval ARCH := $(word 2,$(subst /, ,$(PLATFORM)))) \
+		$(eval EXT  := $(if $(filter windows,$(OS)),.exe,)) \
+		$(eval OUT  := $(DIST_DIR)/$(APP_NAME)-$(OS)-$(ARCH)$(EXT)) \
+		GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 \
+			go build -ldflags "$(LDFLAGS)" -o $(OUT) $(CMD_PATH) && \
+		echo "  built $(OUT)" || exit 1; \
+	)
+
+## install: install native binary to /usr/local/bin
+install: build
+	install -m 0755 $(BIN_DIR)/$(APP_NAME) /usr/local/bin/$(APP_NAME)
+
+## version: print the resolved version string
+version:
+	@echo $(VERSION)
 
 ## test: run all tests with race detector enabled
 test:
 	go test -race -count=1 ./...
-
-## docker: build the Docker image
-docker:
-	docker build -t $(IMAGE_TAG) .
 
 ## lint: run golangci-lint
 lint:
@@ -39,7 +66,7 @@ fmt:
 
 ## clean: remove build artifacts
 clean:
-	rm -rf $(BIN_DIR)
+	rm -rf $(BIN_DIR) $(DIST_DIR)
 
 ## help: list available targets
 help:

@@ -115,3 +115,25 @@ Note: retroactive entry — context entries were missed for the two preceding in
 
 EOF
 
+
+---
+date: 2026-03-12T04:16:35-0400
+hash: wyCByGlY5Ofly0gY0XRGlYGZGncA9y+fMP1/2T3mNCA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 106848b5e62840a4fffa4bbaa1a794120eb328fa
+---
+
+Phase 1a implemented. Branch: phase-1-ingestion.
+
+Added portable binary distribution support:
+- Makefile: new `dist` target cross-compiles 5 platforms (darwin/amd64, darwin/arm64, linux/amd64, linux/arm64, windows/amd64) with CGO_ENABLED=0 and -ldflags "-s -w"; `install` target copies to /usr/local/bin; version/commit/buildDate embedded at build time from git describe
+- cmd/repo-mri/main.go: added version/commit/buildDate vars wired to cobra's rootCmd.Version; --version flag now works
+- README.md: rewritten from scaffold — covers installation (pre-built binary + make install), usage, dev tasks, cross-compilation table, project structure
+- .gitignore: added bin/ to build artifact exclusions
+- project/project.md: inserted Phase 1a checklist (human-authorized)
+
+All gates clean: gosec (0), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race (pass), go build (clean).
+
+EOF
+
