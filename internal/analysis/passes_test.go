@@ -12,10 +12,13 @@ import (
 	"github.com/brentrockwood/mri/schema"
 )
 
-// mockProvider records every RunPass call for test inspection.
+// mockProvider records every RunPass call and optionally implements
+// contextSetter so tests can verify analysis context propagation.
 type mockProvider struct {
-	calls  []mockCall
-	errFor map[providers.PassType]error
+	calls      []mockCall
+	errFor     map[providers.PassType]error
+	contextSet bool
+	languages  []string
 }
 
 type mockCall struct {
@@ -29,6 +32,11 @@ func (m *mockProvider) RunPass(_ context.Context, pass providers.PassType, chunk
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (m *mockProvider) SetAnalysisContext(languages []string) {
+	m.contextSet = true
+	m.languages = languages
 }
 
 // writeTempFiles creates files under a temp directory and returns the dir path.
@@ -238,6 +246,25 @@ func TestBuildFileChunks_CharLimitSplits(t *testing.T) {
 		if len(chunk) != 1 {
 			t.Errorf("chunk %d: expected 1 file, got %d", i, len(chunk))
 		}
+	}
+}
+
+func TestRunPasses_SetsAnalysisContext(t *testing.T) {
+	root := t.TempDir()
+	a := &schema.Analysis{
+		Repo: schema.Repo{Languages: []string{"go", "shell"}},
+	}
+	mp := &mockProvider{}
+
+	_, _, err := RunPasses(context.Background(), root, a, mp)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !mp.contextSet {
+		t.Error("expected SetAnalysisContext to be called on provider")
+	}
+	if len(mp.languages) != 2 || mp.languages[0] != "go" {
+		t.Errorf("unexpected languages: %v", mp.languages)
 	}
 }
 

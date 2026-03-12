@@ -286,3 +286,38 @@ Added TestModuleForFile_PathBoundary. All tests pass, lint clean.
 send 'er gate: gosec 0, goimports clean, go vet clean, golangci-lint clean, go test -race all pass, go build clean. Awaiting push confirmation.
 
 ---
+
+## [2026-03-12T17:28:14-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `af8e13b` | **sha256**: `56dd4c0e1177`
+
+Merged. Proceed with phase 7a.
+
+---
+
+## [2026-03-12T17:31:56-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `af8e13b` | **sha256**: `2858b70743bc`
+
+Phase 7a implementation complete. contextSetter interface, repoPreamble constant, dynamic language list in buildUserMessage. Before/after measurement: 8 → 12 findings. Preamble did not suppress #nosec false positives. Awaiting human review before merge per spec.
+
+---
+
+## [2026-03-12T17:36:50-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `266404d` | **sha256**: `e5faaf061292`
+
+Phase 7a iteration 2: Revised preamble with 5 specific named rules. Results: 0/4/0 findings across 3 runs vs. 8-12 baseline. All previously observed false-positive categories suppressed. Notifying human for review.
+
+---
+
+## [2026-03-12T17:41:38-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `499f44e` | **sha256**: `94c82d22300d`
+
+Phase 7a post-review: all AI findings false positives. One real CodeRabbit fix: preamble now gated on Go language presence via containsLanguage helper. Tests updated. All pass, lint clean.
+
+---
+
+## [2026-03-12T17:43:15-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `a08b0ef` | **sha256**: `0371b66cc5b7`
+
+send 'er gate: gosec 0, goimports clean, go vet clean, golangci-lint clean, go test -race all pass, go build clean. Awaiting push confirmation.
+
+---

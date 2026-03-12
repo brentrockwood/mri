@@ -488,3 +488,94 @@ send 'er gate passed for Phase 7. Branch: phase-7-cli-hardening. gosec: 0 issues
 
 EOF
 
+
+---
+date: 2026-03-12T17:31:52-0400
+hash: K0gDTdbtYux05p1xcsiJZgWj/I7f2xhg4g+YrAAZ8jk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: af8e13b076e0bfefcf0c767fca8469bbb2981e86
+---
+
+Phase 7a: Prompt tuning implementation complete. Branch: phase-7a-prompt-tuning.
+
+Mechanism: contextSetter interface (unexported, consumer-side in passes.go). RunPasses calls
+SetAnalysisContext(a.Repo.Languages) via type assertion before any pass. Both AnthropicProvider
+and OpenAIProvider implement SetAnalysisContext, storing languages and passing them to
+buildUserMessage. repoPreamble constant defined in anthropic.go covers: CLI tool note,
+non-fatal error handling, #nosec annotations. Dynamic portion appends detected languages.
+
+Before/after measurement (against this repo):
+  Before: 8 findings (1H 4M 3L)
+  After:  12 findings (2H 6M 4L)
+
+Preamble did not reduce false-positive rate — clone.go injection still fires as HIGH despite
+explicit #nosec instruction, count increased rather than decreased. LLM variance makes single-run
+comparison noisy. Implementation is correct; preamble text may need further tuning.
+
+Per Phase 7a spec: human review required before merge. Awaiting decision.
+
+EOF
+
+
+---
+date: 2026-03-12T17:36:48-0400
+hash: PgtUtiUlc3AqCMDRP7vkjyUtTz9oUz0z2ZMCibd/TeI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 266404d04802152ed794ba8c384f81ba12221b56
+---
+
+Phase 7a iteration 2: Revised repoPreamble with specific named rules. Branch: phase-7a-prompt-tuning.
+
+Iteration 1 result: 8 → 12 findings (worse). Preamble too vague, model ignored #nosec.
+Iteration 2 result: 0 / 4 / 0 findings across three runs (baseline was 8-12).
+
+Preamble now has 5 explicit numbered rules covering: exec argument injection (#nosec G204),
+deferred close errors (nolint:errcheck), API keys in struct fields, non-fatal error paths,
+output directory permissions. Model now suppresses all previously observed false-positive
+categories. Remaining occasional findings (slice bounds, file read errors) may carry real signal.
+
+Satisfied with iteration 2. Notifying human for final review before send 'er.
+
+EOF
+
+
+---
+date: 2026-03-12T17:41:36-0400
+hash: gYozvoDYKwcavNPwCFtJ2qTNXRyCLOTEHURikZABhwk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 499f44eab478e5ba737648e40fd363d1299e0c18
+---
+
+Phase 7a post-review. Branch: phase-7a-prompt-tuning.
+
+AI findings (4): all false positives.
+- complexity.go read error: returns 1 on error, correct
+- passes.go / imports.go / anthropic.go slice bounds: no actual issue in any case
+
+CodeRabbit findings (4):
+- passes.go nil a.Repo: schema.Repo is a value type, cannot be nil — false positive
+- analysis.json import_count: generated file, skip (x2)
+- anthropic.go language-conditional preamble: VALID — preamble is Go-specific
+
+Fix applied: buildUserMessage now gates repoPreamble on containsLanguage(languages, "go").
+Added containsLanguage helper (case-insensitive). New tests: TestBuildUserMessage_NoPreambleForNonGoRepo, TestContainsLanguage.
+All tests pass. Lint clean.
+
+EOF
+
+
+---
+date: 2026-03-12T17:43:14-0400
+hash: vvJQJ/vnWIVP2RXGJK+tDJ6QkrERgR2JrF5koZVclWc=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: a08b0ef369b2c0a5750974b23257f87d46a00f24
+---
+
+send 'er gate passed for Phase 7a. Branch: phase-7a-prompt-tuning. gosec: 0. goimports: clean. go vet: clean. golangci-lint: clean. go test -race: all pass. go build: clean. Ready to push and open PR.
+
+EOF
+

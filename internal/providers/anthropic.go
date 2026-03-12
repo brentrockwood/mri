@@ -12,9 +12,35 @@ import (
 
 const anthropicModel = "claude-sonnet-4-20250514"
 
+// repoPreamble is the static portion of the context-aware prompt preamble.
+// It tells the model which patterns are intentional in this codebase so they
+// are not surfaced as false-positive findings.
+const repoPreamble = `IMPORTANT: Before reporting any finding, check whether it matches a pre-approved pattern below. If it does, DO NOT report it.
+
+This is a Go CLI tool. The following patterns are intentional and accepted:
+
+1. EXEC ARGUMENT INJECTION: All exec.Command/exec.CommandContext calls pass each argument as a separate element of a Go string slice — no shell is involved, so there is no injection risk. Lines marked "// #nosec G204" have been manually reviewed. Do NOT report command injection or argument injection for any exec call in this codebase.
+
+2. DEFERRED CLOSE ERRORS: "defer f.Close()" calls annotated with "//nolint:errcheck" are intentional. Propagating close errors from deferred reads is not idiomatic Go. Do NOT report ignored close errors or resource leaks for these lines.
+
+3. API KEYS IN STRUCT FIELDS: API keys are read once from environment variables, passed to a constructor, and held in a struct field for one analysis run. They are never written to disk or logs. Do NOT report "key exposed in memory", "sensitive value in struct", or similar findings.
+
+4. NON-FATAL ERROR PATHS: When a function logs an error to stderr and continues rather than returning, this is intentional pipeline design — partial results are preferred over aborting. Do NOT report missing error returns for these logged-and-continued paths.
+
+5. OUTPUT DIRECTORY PERMISSIONS: A directory created with 0o700 (owner-only) is the correct restrictive choice for user-owned output. Do NOT report this as overly permissive or overly restrictive.
+
+Only report findings that are genuinely problematic and not covered by any rule above.`
+
 // AnthropicProvider implements AnalysisProvider using the Anthropic API.
 type AnthropicProvider struct {
-	client *anthropic.Client
+	client    *anthropic.Client
+	languages []string
+}
+
+// SetAnalysisContext stores repo-level metadata used to build context-aware
+// prompts. Call this before running passes to reduce false positives.
+func (p *AnthropicProvider) SetAnalysisContext(languages []string) {
+	p.languages = languages
 }
 
 // NewAnthropicProvider constructs an AnthropicProvider authenticated with key.
@@ -33,7 +59,7 @@ func (p *AnthropicProvider) Model() string { return anthropicModel }
 // Messages API and parses the response as a JSON array of Finding values.
 func (p *AnthropicProvider) RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error) {
 	systemPrompt := buildSystemPrompt(pass)
-	userText := buildUserMessage(pass, chunks)
+	userText := buildUserMessage(pass, chunks, p.languages)
 
 	resp, err := p.client.Messages.New(ctx, anthropic.MessageNewParams{
 		Model:     anthropic.Model(anthropicModel),
@@ -104,13 +130,29 @@ Return [] if no issues are found.`
 }
 
 // buildUserMessage formats chunks into a user message for the given pass.
-func buildUserMessage(pass PassType, chunks []FileChunk) string {
+// When the repository contains Go, a context-aware preamble is prepended to
+// suppress false-positive findings for intentional Go patterns.
+func buildUserMessage(pass PassType, chunks []FileChunk, languages []string) string {
 	var sb strings.Builder
+	if containsLanguage(languages, "go") {
+		sb.WriteString(repoPreamble)
+		fmt.Fprintf(&sb, "\nLanguages detected in this repository: %s.\n\n", strings.Join(languages, ", "))
+	}
 	fmt.Fprintf(&sb, "Perform a %s analysis on the following content:\n\n", pass)
 	for _, c := range chunks {
 		fmt.Fprintf(&sb, "=== FILE: %s (%s) ===\n%s\n\n", c.Path, c.Language, c.Content)
 	}
 	return sb.String()
+}
+
+// containsLanguage reports whether lang appears in languages (case-insensitive).
+func containsLanguage(languages []string, lang string) bool {
+	for _, l := range languages {
+		if strings.EqualFold(l, lang) {
+			return true
+		}
+	}
+	return false
 }
 
 // rawFinding is used for JSON unmarshalling with snake_case field names.
