@@ -47,7 +47,7 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	source := args[0]
 	ctx := context.Background()
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Analyzing %s…\n", source)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Analyzing %s…\n", source)
 
 	result, err := ingestion.Ingest(ctx, source)
 	if err != nil {
@@ -74,11 +74,11 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	a := result.Analysis
-	fmt.Fprintf(cmd.OutOrStdout(), "Repo:      %s\n", a.Repo.Name)
-	fmt.Fprintf(cmd.OutOrStdout(), "Files:     %d\n", a.Repo.FileCount)
-	fmt.Fprintf(cmd.OutOrStdout(), "Modules:   %d\n", a.Repo.ModuleCount)
-	fmt.Fprintf(cmd.OutOrStdout(), "Languages: %v\n", a.Repo.Languages)
-	fmt.Fprintf(cmd.OutOrStdout(), "Output:    %s\n", outPath)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Repo:      %s\n", a.Repo.Name)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Files:     %d\n", a.Repo.FileCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Modules:   %d\n", a.Repo.ModuleCount)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Languages: %v\n", a.Repo.Languages)
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:    %s\n", outPath)
 
 	return nil
 }

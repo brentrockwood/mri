@@ -91,3 +91,27 @@ send 'er gate passed for phase-1-ingestion. Fixed 6 MEDIUM gosec findings (no HI
 
 EOF
 
+
+---
+date: 2026-03-12T03:59:16-0400
+hash: 47wrn+j1dYvSr4lxFadKXazaFv6dtXTIImH8CFaBdVA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 36994ff37e35cd02005a4f4766afa7ad24e06843
+---
+
+Fixed four CodeRabbit findings in internal/ingestion and one lint issue in cmd/repo-mri. Branch: phase-1-ingestion.
+
+Changes:
+- imports.go: guard strings.Fields(part)[0] against panic on whitespace-only splits
+- walker.go: exclude root path from hidden-dir skip check so dotfolder roots are not silently skipped
+- ingestion.go: derive repoName from source URL for remote repos (parse last URL path segment, strip .git), fall back to filepath.Base(root) for local
+- walker_test.go: replace dead-code ctx.Err()==nil check with errors.Is(err, ctx.Err())
+- cmd/repo-mri/main.go: assign _, _ for fmt.Fprintf return values to satisfy errcheck lint rule
+
+All send 'er gates passed: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race -count=1 (pass), go build (clean).
+
+Note: retroactive entry — context entries were missed for the two preceding interactions in this session. DOA skips acknowledged per troubleshooting section.
+
+EOF
+
