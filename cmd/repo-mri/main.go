@@ -15,6 +15,7 @@ import (
 	"github.com/brentrockwood/mri/internal/analysis"
 	"github.com/brentrockwood/mri/internal/ingestion"
 	"github.com/brentrockwood/mri/internal/providers"
+	"github.com/brentrockwood/mri/schema"
 )
 
 // version, commit, and buildDate are injected at build time via -ldflags.
@@ -74,20 +75,48 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	// Select the AI analysis provider. If no API key is configured, skip AI
-	// analysis and continue with static results only. Phase 4 will use the
-	// provider to run passes over the ingested file chunks.
+	// analysis and continue with static results only.
 	provider, err := providers.SelectProvider(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Notice: AI analysis unavailable (%v). Continuing with static analysis only.\n", err)
 	} else {
-		switch p := provider.(type) {
-		case *providers.AnthropicProvider:
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   Anthropic (%s)\n", p.Model())
-		case *providers.OpenAIProvider:
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   OpenAI (%s)\n", p.Model())
-		default:
+		if n, ok := provider.(providers.Namer); ok {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   %s (%s)\n", n.Name(), n.Model())
+			result.Analysis.Meta.Provider = n.Name()
+			result.Analysis.Meta.ModelUsed = n.Model()
+		} else {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Provider:   selected\n")
 		}
+
+		findings, skipped, passErr := analysis.RunPasses(ctx, result.RootDir, &result.Analysis, provider)
+		if passErr != nil {
+			return fmt.Errorf("analyze: AI passes: %w", passErr)
+		}
+
+		// Convert findings to risks and append.
+		for i, f := range findings {
+			result.Analysis.Risks = append(result.Analysis.Risks, schema.Risk{
+				ID:            fmt.Sprintf("risk_%03d", i+1),
+				Severity:      f.Severity,
+				Type:          f.Type,
+				Pass:          f.Type,
+				Module:        moduleForFile(f.File, result.Analysis.Modules),
+				File:          f.File,
+				Title:         f.Title,
+				Description:   f.Description,
+				Confidence:    f.Confidence,
+				EvidenceLines: f.EvidenceLines,
+			})
+		}
+
+		if len(skipped) > 0 {
+			result.Analysis.Meta.SkippedPasses = append(result.Analysis.Meta.SkippedPasses, skipped...)
+		}
+
+		// Print findings summary.
+		high, medium, low := countBySeverity(result.Analysis.Risks)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Findings:  %d (%d high, %d medium, %d low)\n",
+			len(result.Analysis.Risks), high, medium, low)
 	}
 
 	// Determine output directory: .repo-mri/ under the repo root.
@@ -124,4 +153,38 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output:     %s\n", outPath)
 
 	return nil
+}
+
+// moduleForFile returns the ID of the module whose Path is a prefix of file,
+// or whose ID matches the first path component of file. Falls back to "unknown".
+func moduleForFile(file string, modules []schema.Module) string {
+	// Try path prefix match first.
+	for _, m := range modules {
+		if m.Path != "" && strings.HasPrefix(file, m.Path) {
+			return m.ID
+		}
+	}
+	// Try ID match on first path component.
+	first := strings.SplitN(file, "/", 2)[0]
+	for _, m := range modules {
+		if m.ID == first {
+			return m.ID
+		}
+	}
+	return "unknown"
+}
+
+// countBySeverity tallies risks by severity level.
+func countBySeverity(risks []schema.Risk) (high, medium, low int) {
+	for _, r := range risks {
+		switch r.Severity {
+		case "high":
+			high++
+		case "medium":
+			medium++
+		case "low":
+			low++
+		}
+	}
+	return
 }

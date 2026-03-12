@@ -126,3 +126,31 @@ send 'er
 send 'er gate passed for Phase 3 (phase-3-provider-wiring). All checks clean. Awaiting push confirmation.
 
 ---
+
+## [2026-03-12T08:27:17-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `0e39462` | **sha256**: `b62e822a7840`
+
+Merged. Proceed.
+
+---
+
+## [2026-03-12T08:33:06-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `4933418` | **sha256**: `d1cdd84a787f`
+
+Phase 4 AI passes implementation complete. Created internal/analysis/passes.go (RunPasses orchestrator, chunking logic, buildArchChunk, buildFileChunks), implemented real RunPass on both AnthropicProvider and OpenAIProvider replacing stubs, added Namer interface to providers package, wired AI passes into CLI (findings → schema.Risk conversion, skipped passes tracking, findings summary output), and wrote passes_test.go with 4 tests covering chunking, architecture chunk shape, error skipping, and all-passes-skip. All tests pass, lint and vet clean.
+
+---
+
+## [2026-03-12T08:46:56-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `f6216ba` | **sha256**: `a99a6eb17859`
+
+send 'er
+
+---
+
+## [2026-03-12T08:47:18-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f6216ba` | **sha256**: `edb1e4920d6e`
+
+send 'er gate passed for Phase 4 (phase-4-ai-passes). All checks clean. Awaiting push confirmation.
+
+---

@@ -51,3 +51,12 @@ type AnalysisProvider interface {
 	// It returns nil, nil when no findings are produced.
 	RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error)
 }
+
+// Namer is an optional interface implemented by providers that can report
+// their name and the model they use. Use a type assertion to check for it.
+type Namer interface {
+	// Name returns a short identifier for the provider (e.g. "anthropic").
+	Name() string
+	// Model returns the model identifier (e.g. "claude-sonnet-4-20250514").
+	Model() string
+}
