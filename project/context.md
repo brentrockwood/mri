@@ -265,3 +265,28 @@ send 'er gate passed for Phase 3. Branch: phase-3-provider-wiring. gosec: 0 issu
 
 EOF
 
+
+---
+date: 2026-03-12T08:33:00-0400
+hash: xBOG5UOQXN1aCp2OR8jdsBn6AT+quvezpX2XSrxt+d4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 49334186b458aaedd74e7ecc4b7d6357a0dbf65b
+---
+
+Phase 4 AI passes implemented. Branch: phase-4-ai-passes.
+
+Created internal/analysis/passes.go with RunPasses() orchestrating three passes (architecture, bug, security). Architecture pass builds a graph-summary chunk from dependency data. Bug and security passes read file content from disk in chunks of 50 files. Pass errors are logged to stderr, skipped passes recorded in meta.
+
+Replaced stub RunPass in internal/providers/anthropic.go with real Anthropic Messages API call (claude-sonnet-4-20250514, max_tokens=4096). Added parseFindings() to extract JSON array from response text.
+
+Replaced stub RunPass in internal/providers/openai.go with real OpenAI Chat Completions API call (gpt-4o, max_tokens=4096). Both providers share buildSystemPrompt() and buildUserMessage() helpers defined in anthropic.go.
+
+Added Namer interface to internal/providers/provider.go. Added Name() method to both providers. Updated cmd/repo-mri/main.go to call RunPasses after static analysis, convert []Finding to []schema.Risk, update SkippedPasses in meta, and print findings summary line.
+
+Added internal/analysis/passes_test.go with four table-driven tests covering: chunking with >50 files (3 chunks per file pass), architecture single graph-summary chunk, skipped pass on error, and all passes skipped.
+
+All tests pass (go test -race -count=1 ./...), go vet clean, golangci-lint 0 issues, go build clean.
+
+EOF
+
