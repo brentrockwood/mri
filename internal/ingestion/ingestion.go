@@ -6,6 +6,7 @@ package ingestion
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -154,6 +155,11 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	})
 
 	repoName := filepath.Base(root)
+	if isRemoteURL(source) {
+		if u, err := url.Parse(source); err == nil {
+			repoName = strings.TrimSuffix(filepath.Base(u.Path), ".git")
+		}
+	}
 
 	analysis := schema.Analysis{
 		Meta: schema.Meta{

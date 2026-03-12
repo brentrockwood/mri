@@ -2,6 +2,7 @@ package ingestion
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -137,7 +138,7 @@ func TestWalkContextCancellation(t *testing.T) {
 		// so we only check that if err != nil it wraps the context error.
 		return
 	}
-	if ctx.Err() == nil {
+	if !errors.Is(err, ctx.Err()) {
 		t.Errorf("unexpected non-context error: %v", err)
 	}
 }

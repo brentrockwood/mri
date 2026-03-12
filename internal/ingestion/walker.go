@@ -66,8 +66,9 @@ func Walk(ctx context.Context, root string) ([]FileInfo, error) {
 		name := d.Name()
 
 		if d.IsDir() {
-			// Skip hidden directories and known non-code directories.
-			if strings.HasPrefix(name, ".") || skipDirs[name] {
+			// Skip hidden directories and known non-code directories,
+			// but never skip the root itself.
+			if path != root && (strings.HasPrefix(name, ".") || skipDirs[name]) {
 				return filepath.SkipDir
 			}
 			return nil

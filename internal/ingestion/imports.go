@@ -84,8 +84,12 @@ func parsePythonImports(path string) ([]string, error) {
 		} else {
 			// import X, Y, Z
 			for _, part := range strings.Split(m[2], ",") {
-				pkg := strings.TrimSpace(strings.Fields(part)[0])
-				if pkg != "" && !seen[pkg] {
+				fields := strings.Fields(part)
+				if len(fields) == 0 {
+					continue
+				}
+				pkg := fields[0]
+				if !seen[pkg] {
 					seen[pkg] = true
 					imports = append(imports, pkg)
 				}
