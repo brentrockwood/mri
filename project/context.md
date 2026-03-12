@@ -389,3 +389,33 @@ send 'er gate passed for Phase 6. Branch: phase-6-report. gosec: 0. goimports: c
 
 EOF
 
+
+---
+date: 2026-03-12T11:21:00-0400
+hash: Yo40hQNMh8Tq6NkS56GJHbt2e9Fd4odvVaee/fnsQpY=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 8f8eebdd594621c138a3d912544a1af67d12dd76
+---
+
+Project retrospective. Branch: phase-6-report.
+
+WHAT WENT WELL:
+- Phase decomposition: 6 discrete, mergeable phases kept each unit reviewable and shippable independently.
+- DOA discipline: structured workflow produced a clean, auditable history.
+- Self-review via analysis.json: caught 5 real bugs (architecture module="unknown", duration scope, risk ID gaps, sort epsilon, OpenAI empty content).
+- CodeRabbit integration: good signal-to-noise, caught real issues each phase.
+- Subagent delegation: kept main conversation focused on oversight; subagents reliable.
+- Test quality: table-driven, race detector always on, tests alongside source.
+
+AREAS FOR IMPROVEMENT:
+1. Notification discipline: forgot scripts/notify after Phase 2, required correction.
+2. AI self-analysis noise: ~10/12 Phase 6 findings were false positives; prompts could include #nosec context and intentional non-fatal patterns to reduce noise.
+3. Architecture finding attribution was foreseeable: graph-summary chunk producing module="unknown" should have been anticipated in Phase 4 design.
+4. Duration tracking scope mismatch: analysis_duration_ms set in Ingest() instead of CLI — Phase 1 oversight surfaced in Phase 5.
+5. Risk ID stability across phases: IDs assigned before dedup ran; aggregation should own ID assignment.
+6. Module granularity is coarse: internal/ is one module (23 files); package-level modules would sharpen risk localisation.
+7. Test files in AI passes: _test.go files inflate complexity and generate findings about test code; should be excluded from AI passes.
+
+EOF
+
