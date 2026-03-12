@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -60,6 +61,7 @@ the temporary clone directory).`,
 func runAnalyze(cmd *cobra.Command, args []string) error {
 	source := args[0]
 	ctx := context.Background()
+	start := time.Now()
 
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Analyzing %s…\n", source)
 
@@ -94,10 +96,9 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("analyze: AI passes: %w", passErr)
 		}
 
-		// Convert findings to risks and append.
-		for i, f := range findings {
+		// Convert findings to risks (IDs assigned after dedup — see below).
+		for _, f := range findings {
 			result.Analysis.Risks = append(result.Analysis.Risks, schema.Risk{
-				ID:            fmt.Sprintf("risk_%03d", i+1),
 				Severity:      f.Severity,
 				Type:          f.Type,
 				Pass:          f.Type,
@@ -118,12 +119,20 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	// Deduplicate risks and compute risk scores for files and modules.
 	aggregation.Aggregate(&result.Analysis)
 
+	// Assign sequential IDs after deduplication so there are no gaps.
+	for i := range result.Analysis.Risks {
+		result.Analysis.Risks[i].ID = fmt.Sprintf("risk_%03d", i+1)
+	}
+
 	if provider != nil {
 		// Print findings summary.
 		high, medium, low := countBySeverity(result.Analysis.Risks)
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Findings:  %d (%d high, %d medium, %d low)\n",
 			len(result.Analysis.Risks), high, medium, low)
 	}
+
+	// Record total pipeline duration now that all analysis is complete.
+	result.Analysis.Meta.AnalysisDurationMS = time.Since(start).Milliseconds()
 
 	// Determine output directory: .repo-mri/ under the repo root.
 	outDir := filepath.Join(result.RootDir, ".repo-mri")
@@ -162,8 +171,14 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 }
 
 // moduleForFile returns the ID of the module whose Path is a prefix of file,
-// or whose ID matches the first path component of file. Falls back to "unknown".
+// or whose ID matches the first path component of file. Architecture findings
+// that reference the synthetic graph summary are labelled "architecture".
+// Falls back to "unknown".
 func moduleForFile(file string, modules []schema.Module) string {
+	// Synthetic chunk names used by the architecture pass.
+	if file == "graph-summary" || file == "graph" {
+		return "architecture"
+	}
 	// Try path prefix match first.
 	for _, m := range modules {
 		if m.Path != "" && strings.HasPrefix(file, m.Path) {

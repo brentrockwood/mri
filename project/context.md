@@ -329,3 +329,16 @@ send 'er gate passed for Phase 5. Branch: phase-5-aggregation. gosec: 0 issues. 
 
 EOF
 
+
+---
+date: 2026-03-12T10:48:55-0400
+hash: TxcHY9+K92JhwPjwrFk6trbSfgO0ZTLNFsUbZACxmV4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 31199bd647ba0cfaa291b2b3c00fedfdbd1d03b3
+---
+
+Fix: analysis.json quality issues from self-review + CodeRabbit. Branch: phase-5-aggregation. Fixed: architecture findings module='unknown' (moduleForFile now handles graph/graph-summary → 'architecture'); analysis_duration_ms covers full pipeline (not just ingestion); risk IDs assigned after dedup (no gaps); sortModules uses epsilon float comparison; OpenAI empty content returns nil findings not error. 15 AI findings reviewed: 5 real, 10 false positives.
+
+EOF
+

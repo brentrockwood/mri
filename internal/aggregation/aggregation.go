@@ -3,6 +3,7 @@
 package aggregation
 
 import (
+	"math"
 	"sort"
 
 	"github.com/brentrockwood/mri/schema"
@@ -105,13 +106,19 @@ func scoreModules(a *schema.Analysis) {
 	}
 }
 
-// sortModules sorts a.Modules descending by RiskScore. Ties are broken
-// alphabetically by ID.
+// riskScoreEps is the tolerance used when comparing RiskScore values for
+// sort stability. Scores closer than this are treated as equal and the
+// tie-breaker (alphabetical ID) is used instead.
+const riskScoreEps = 1e-9
+
+// sortModules sorts a.Modules descending by RiskScore. Ties (within eps)
+// are broken alphabetically by ID.
 func sortModules(a *schema.Analysis) {
 	sort.SliceStable(a.Modules, func(i, j int) bool {
 		mi, mj := a.Modules[i], a.Modules[j]
-		if mi.RiskScore != mj.RiskScore {
-			return mi.RiskScore > mj.RiskScore
+		diff := mi.RiskScore - mj.RiskScore
+		if math.Abs(diff) > riskScoreEps {
+			return diff > 0
 		}
 		return mi.ID < mj.ID
 	})

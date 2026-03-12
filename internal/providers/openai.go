@@ -50,6 +50,9 @@ func (p *OpenAIProvider) RunPass(ctx context.Context, pass PassType, chunks []Fi
 	}
 
 	responseText := resp.Choices[0].Message.Content
+	if responseText == "" {
+		return nil, nil
+	}
 
 	findings, err := parseFindings(responseText)
 	if err != nil {
