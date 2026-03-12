@@ -540,3 +540,29 @@ Satisfied with iteration 2. Notifying human for final review before send 'er.
 
 EOF
 
+
+---
+date: 2026-03-12T17:41:36-0400
+hash: gYozvoDYKwcavNPwCFtJ2qTNXRyCLOTEHURikZABhwk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 499f44eab478e5ba737648e40fd363d1299e0c18
+---
+
+Phase 7a post-review. Branch: phase-7a-prompt-tuning.
+
+AI findings (4): all false positives.
+- complexity.go read error: returns 1 on error, correct
+- passes.go / imports.go / anthropic.go slice bounds: no actual issue in any case
+
+CodeRabbit findings (4):
+- passes.go nil a.Repo: schema.Repo is a value type, cannot be nil — false positive
+- analysis.json import_count: generated file, skip (x2)
+- anthropic.go language-conditional preamble: VALID — preamble is Go-specific
+
+Fix applied: buildUserMessage now gates repoPreamble on containsLanguage(languages, "go").
+Added containsLanguage helper (case-insensitive). New tests: TestBuildUserMessage_NoPreambleForNonGoRepo, TestContainsLanguage.
+All tests pass. Lint clean.
+
+EOF
+

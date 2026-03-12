@@ -130,11 +130,11 @@ Return [] if no issues are found.`
 }
 
 // buildUserMessage formats chunks into a user message for the given pass.
-// When languages is non-empty, a context-aware preamble is prepended to
-// reduce false-positive findings for intentional patterns.
+// When the repository contains Go, a context-aware preamble is prepended to
+// suppress false-positive findings for intentional Go patterns.
 func buildUserMessage(pass PassType, chunks []FileChunk, languages []string) string {
 	var sb strings.Builder
-	if len(languages) > 0 {
+	if containsLanguage(languages, "go") {
 		sb.WriteString(repoPreamble)
 		fmt.Fprintf(&sb, "\nLanguages detected in this repository: %s.\n\n", strings.Join(languages, ", "))
 	}
@@ -143,6 +143,16 @@ func buildUserMessage(pass PassType, chunks []FileChunk, languages []string) str
 		fmt.Fprintf(&sb, "=== FILE: %s (%s) ===\n%s\n\n", c.Path, c.Language, c.Content)
 	}
 	return sb.String()
+}
+
+// containsLanguage reports whether lang appears in languages (case-insensitive).
+func containsLanguage(languages []string, lang string) bool {
+	for _, l := range languages {
+		if strings.EqualFold(l, lang) {
+			return true
+		}
+	}
+	return false
 }
 
 // rawFinding is used for JSON unmarshalling with snake_case field names.

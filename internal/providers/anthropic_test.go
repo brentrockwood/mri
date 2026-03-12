@@ -15,12 +15,19 @@ func TestBuildUserMessage_NoPreambleWhenNoLanguages(t *testing.T) {
 	}
 }
 
+func TestBuildUserMessage_NoPreambleForNonGoRepo(t *testing.T) {
+	msg := buildUserMessage(PassBug, nil, []string{"python", "shell"})
+	if strings.Contains(msg, repoPreamble) {
+		t.Error("Go-specific preamble should not appear for a non-Go repository")
+	}
+}
+
 func TestBuildUserMessage_PreambleIncludesLanguagesAndStaticText(t *testing.T) {
 	langs := []string{"go", "shell"}
 	msg := buildUserMessage(PassSecurity, nil, langs)
 
 	if !strings.Contains(msg, repoPreamble) {
-		t.Error("preamble constant should appear in message")
+		t.Error("preamble constant should appear in message for Go repos")
 	}
 	if !strings.Contains(msg, "go, shell") {
 		t.Errorf("expected language list in preamble, got:\n%s", msg)
@@ -33,6 +40,25 @@ func TestBuildUserMessage_PreambleIncludesLanguagesAndStaticText(t *testing.T) {
 	analysisIdx := strings.Index(msg, "Perform a")
 	if preambleIdx > analysisIdx {
 		t.Error("preamble must appear before the analysis instruction")
+	}
+}
+
+func TestContainsLanguage(t *testing.T) {
+	langs := []string{"Go", "Shell"}
+	tests := []struct {
+		lang string
+		want bool
+	}{
+		{"go", true},
+		{"GO", true},
+		{"shell", true},
+		{"python", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := containsLanguage(langs, tt.lang); got != tt.want {
+			t.Errorf("containsLanguage(%v, %q) = %v, want %v", langs, tt.lang, got, tt.want)
+		}
 	}
 }
 
