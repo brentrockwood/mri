@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/brentrockwood/mri/internal/providers"
@@ -105,8 +106,8 @@ func TestRunPasses_ArchitectureChunk(t *testing.T) {
 	if len(archCalls[0].chunks) != 1 {
 		t.Fatalf("architecture pass: got %d chunks, want 1", len(archCalls[0].chunks))
 	}
-	if archCalls[0].chunks[0].Path != "graph-summary" {
-		t.Errorf("architecture chunk path: got %q, want %q", archCalls[0].chunks[0].Path, "graph-summary")
+	if archCalls[0].chunks[0].Path != providers.GraphSummaryPath {
+		t.Errorf("architecture chunk path: got %q, want %q", archCalls[0].chunks[0].Path, providers.GraphSummaryPath)
 	}
 }
 
@@ -149,6 +150,94 @@ func TestRunPasses_AllPassesSkipped(t *testing.T) {
 	}
 	if len(skipped) != 3 {
 		t.Errorf("expected 3 skipped passes, got %v", skipped)
+	}
+}
+
+func TestBuildFileChunks_ExcludesTestFiles(t *testing.T) {
+	root := t.TempDir()
+
+	write := func(name, content string) schema.File {
+		abs := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(abs), 0o750); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(abs, []byte(content), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		return schema.File{Path: name, Language: "Go"}
+	}
+
+	files := []schema.File{
+		write("src/app.go", "package src\n"),
+		write("src/app_test.go", "package src\n"),
+		write("ui/Button.test.ts", "// test\n"),
+		write("ui/Button.spec.js", "// test\n"),
+		write("spec/model_spec.rb", "# test\n"),
+		write("cmd/main.go", "package main\n"),
+	}
+
+	chunks, err := buildFileChunks(root, files)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, chunk := range chunks {
+		for _, fc := range chunk {
+			if isTestFile(fc.Path) {
+				t.Errorf("test file %q found in chunk; should be excluded", fc.Path)
+			}
+		}
+	}
+
+	// Confirm the two non-test files are present.
+	var paths []string
+	for _, chunk := range chunks {
+		for _, fc := range chunk {
+			paths = append(paths, fc.Path)
+		}
+	}
+	if len(paths) != 2 {
+		t.Errorf("expected 2 non-test files in chunks, got %d: %v", len(paths), paths)
+	}
+}
+
+func TestBuildFileChunks_CharLimitSplits(t *testing.T) {
+	// Create files whose combined size exceeds chunkCharLimit but file count
+	// stays well below chunkSize, so only the char limit triggers the split.
+	root := t.TempDir()
+
+	// Each file is just over chunkCharLimit/2 bytes so two files exceed the limit.
+	halfPlus := chunkCharLimit/2 + 1
+	content := strings.Repeat("x", halfPlus)
+
+	write := func(name string) schema.File {
+		abs := filepath.Join(root, name)
+		if err := os.WriteFile(abs, []byte(content), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		return schema.File{Path: name, Language: "Go"}
+	}
+
+	files := []schema.File{
+		write("a.go"),
+		write("b.go"),
+		write("c.go"),
+	}
+
+	chunks, err := buildFileChunks(root, files)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// With each file just over 40 000 chars, a.go and b.go cannot share a chunk
+	// (combined > 80 000). Expected layout: [a], [b], [c].
+	if len(chunks) != 3 {
+		t.Errorf("expected 3 chunks (char limit splits), got %d", len(chunks))
+	}
+	for i, chunk := range chunks {
+		if len(chunk) != 1 {
+			t.Errorf("chunk %d: expected 1 file, got %d", i, len(chunk))
+		}
 	}
 }
 

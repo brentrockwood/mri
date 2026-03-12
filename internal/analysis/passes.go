@@ -11,7 +11,10 @@ import (
 	"github.com/brentrockwood/mri/schema"
 )
 
-const chunkSize = 50
+const (
+	chunkSize      = 50
+	chunkCharLimit = 80_000
+)
 
 // RunPasses executes the architecture, bug, and security analysis passes using
 // provider and returns the combined findings. Files are read from root. Any
@@ -70,7 +73,7 @@ func buildArchChunk(a *schema.Analysis) []providers.FileChunk {
 
 	return []providers.FileChunk{
 		{
-			Path:     "graph-summary",
+			Path:     providers.GraphSummaryPath,
 			Language: "text",
 			Content:  sb.String(),
 		},
@@ -78,13 +81,18 @@ func buildArchChunk(a *schema.Analysis) []providers.FileChunk {
 }
 
 // buildFileChunks reads the content of each file from disk and groups the
-// results into chunks of at most chunkSize files each.
+// results into chunks bounded by chunkSize files and chunkCharLimit characters.
+// Test files (e.g. _test.go, *.spec.ts) are excluded from all chunks.
 func buildFileChunks(root string, files []schema.File) ([][]providers.FileChunk, error) {
 	var chunks [][]providers.FileChunk
 	var current []providers.FileChunk
+	var currentChars int
 	var firstErr error
 
 	for _, f := range files {
+		if isTestFile(f.Path) {
+			continue
+		}
 		absPath := filepath.Join(root, f.Path)
 		data, err := os.ReadFile(absPath) // #nosec G304 -- path from ingestion walk
 		if err != nil {
@@ -93,20 +101,43 @@ func buildFileChunks(root string, files []schema.File) ([][]providers.FileChunk,
 			}
 			continue
 		}
+		// Flush current chunk if adding this file would exceed the char limit
+		// (only when current is non-empty, so a single oversized file is still included).
+		if len(current) > 0 && currentChars+len(data) > chunkCharLimit {
+			chunks = append(chunks, current)
+			current = nil
+			currentChars = 0
+		}
 		current = append(current, providers.FileChunk{
 			Path:     f.Path,
 			Language: f.Language,
 			Content:  string(data),
 		})
+		currentChars += len(data)
 		if len(current) >= chunkSize {
 			chunks = append(chunks, current)
 			current = nil
+			currentChars = 0
 		}
 	}
 	if len(current) > 0 {
 		chunks = append(chunks, current)
 	}
 	return chunks, firstErr
+}
+
+// isTestFile reports whether path matches a known test file pattern.
+// Test files are excluded from AI analysis passes.
+func isTestFile(path string) bool {
+	if strings.HasSuffix(path, "_test.go") {
+		return true
+	}
+	for _, suffix := range []string{".test.ts", ".test.js", ".spec.ts", ".spec.js", "_spec.rb"} {
+		if strings.HasSuffix(path, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // runChunkedPass calls provider.RunPass once per chunk and aggregates findings.

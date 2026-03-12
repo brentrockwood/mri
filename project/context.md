@@ -419,3 +419,25 @@ AREAS FOR IMPROVEMENT:
 
 EOF
 
+
+---
+date: 2026-03-12T16:37:27-0400
+hash: OgFbLvCD6v4B1qIs4YovolM/hcxsmompJZjb4bhEZxs=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2b944858378ba66b2f8a7a05bcb081a1cc7a9057
+---
+
+Phase 7 CLI hardening — all 5 items complete. Branch: phase-7-cli-hardening.
+
+7a: buildFileChunks now skips _test.go, *.test.ts/js, *.spec.ts/js, *_spec.rb files.
+7b: Added chunkCharLimit=80_000; chunks flush on char limit before file count limit.
+7c: --timeout flag (default 5m) on analyze cmd; ctx derived from cmd.Context() + WithTimeout; deferred cancel on all paths.
+7d: moduleForFile now tracks longest-prefix match, fixing false attribution on overlapping paths (e.g. src/pay vs src/payment).
+7e: GraphSummaryPath constant defined in providers/provider.go; "graph-summary" and "graph" literals replaced across passes.go and main.go.
+
+New tests: TestBuildFileChunks_ExcludesTestFiles, TestBuildFileChunks_CharLimitSplits, TestModuleForFile_LongestPrefixMatch, TestModuleForFile_GraphSummary, TestRunAnalyze_CancelledContext.
+All tests pass (race detector). golangci-lint: clean. go vet: clean. go build: clean.
+
+EOF
+
