@@ -303,3 +303,55 @@ send 'er gate passed for Phase 4. Branch: phase-4-ai-passes. gosec: 0 issues. go
 
 EOF
 
+
+---
+date: 2026-03-12T09:24:01-0400
+hash: V2RnWpE5HI8UFkT2NkdH/MNdWDWrJK899dWJ11mWAs8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 49fed2c7458702fc20d78ec48757d7b813b23b72
+---
+
+Phase 5 aggregation implemented. Branch: phase-5-aggregation. Created internal/aggregation package with Aggregate() function: deduplicates risks by file+type (keeping higher confidence), computes file risk scores using severity weights (high=1.0, medium=0.5, low=0.25) times confidence capped at 1.0, computes module risk scores as mean across all module files, and sorts modules descending by risk score (ties broken alphabetically). Wired into cmd/repo-mri/main.go after findings conversion block and before JSON write. Added 13 table-driven tests covering all specified scenarios. All tests pass (go test -race -count=1 ./...), golangci-lint clean, go vet clean, go build clean.
+
+EOF
+
+
+---
+date: 2026-03-12T09:45:10-0400
+hash: Ik/aCNjfxONc3h7pvMmYvBDea2HEe9lwZsxD8MNHFr8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: ed4e67d51913c324eb122995cdcfa926e765b141
+---
+
+send 'er gate passed for Phase 5. Branch: phase-5-aggregation. gosec: 0 issues. goimports: clean. go vet: clean. golangci-lint: 0 issues. go test -race -count=1: pass. go build: clean. Ready to push and open PR.
+
+EOF
+
+
+---
+date: 2026-03-12T10:48:55-0400
+hash: TxcHY9+K92JhwPjwrFk6trbSfgO0ZTLNFsUbZACxmV4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 31199bd647ba0cfaa291b2b3c00fedfdbd1d03b3
+---
+
+Fix: analysis.json quality issues from self-review + CodeRabbit. Branch: phase-5-aggregation. Fixed: architecture findings module='unknown' (moduleForFile now handles graph/graph-summary → 'architecture'); analysis_duration_ms covers full pipeline (not just ingestion); risk IDs assigned after dedup (no gaps); sortModules uses epsilon float comparison; OpenAI empty content returns nil findings not error. 15 AI findings reviewed: 5 real, 10 false positives.
+
+EOF
+
+
+---
+date: 2026-03-12T10:49:54-0400
+hash: CE2V3oefQhoOnU7UT2FWq5Jsdlt4nuCTtHB8g+uJJ4Q=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 157d77c56f60df5ee80a32a9937c75b69966c60f
+---
+
+send 'er gate passed for Phase 5 + fixes. Branch: phase-5-aggregation. gosec: 0. goimports: clean. go vet: clean. golangci-lint: 0. go test -race: pass. go build: clean. Ready to push and open PR.
+
+EOF
+
