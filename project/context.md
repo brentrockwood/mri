@@ -441,3 +441,37 @@ All tests pass (race detector). golangci-lint: clean. go vet: clean. go build: c
 
 EOF
 
+
+---
+date: 2026-03-12T17:14:07-0400
+hash: H7qL8m4MN+oqH2Bn0Hzj3At1QC6qe0GLrJcA5U8VRA4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: a1c96f9527779a993950fffadf95d03d804eaff8
+---
+
+Self-review (analysis.json) and CodeRabbit review of Phase 7. Branch: phase-7-cli-hardening.
+
+Fixed three real issues:
+
+1. moduleForFile path boundary: strings.HasPrefix("src/payment/file.go", "src/pay") is true;
+   added hasPathPrefix helper that requires the match ends at '/' or end-of-string.
+
+2. "graph" alias restored: AI models may return "graph" instead of "graph-summary" for
+   architecture findings. Re-added the alias check with explanatory comment.
+
+3. Output directory mode 0o750 -> 0o700 (owner-only); removed stale #nosec G301 annotation.
+
+Skipped as false positives:
+- risk_002 clone.go injection: URL passed as exec arg, not shell; #nosec G204 in place
+- risk_004 API key validation: non-empty check is correct; format validation premature
+- risk_005 fileSize bounds: paths from WalkDir
+- risk_006 mktemp: standard practice, confidence 0.3
+- CodeRabbit AI_SESSION.md timestamps: append-only artifact, cannot edit
+- CodeRabbit project.md: write-locked
+
+New test: TestModuleForFile_PathBoundary.
+All tests pass. Lint clean.
+
+EOF
+

@@ -143,7 +143,7 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 
 	// Determine output directory: .repo-mri/ under the repo root.
 	outDir := filepath.Join(result.RootDir, ".repo-mri")
-	if err := os.MkdirAll(outDir, 0o750); err != nil { // #nosec G301 -- output dir, not sensitive
+	if err := os.MkdirAll(outDir, 0o700); err != nil {
 		return fmt.Errorf("analyze: create output dir %s: %w", outDir, err)
 	}
 
@@ -185,21 +185,23 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 	return nil
 }
 
-// moduleForFile returns the ID of the module whose Path is the longest prefix
-// of file, or whose ID matches the first path component of file. Architecture
-// findings that reference the synthetic graph summary are labelled
-// "architecture". Falls back to "unknown".
+// moduleForFile returns the ID of the module whose Path is the longest
+// path-component-boundary prefix of file, or whose ID matches the first path
+// component of file. Architecture findings that reference the synthetic graph
+// summary are labelled "architecture". Falls back to "unknown".
 func moduleForFile(file string, modules []schema.Module) string {
-	// Synthetic chunk name used by the architecture pass.
-	if file == providers.GraphSummaryPath {
+	// Synthetic chunk name used by the architecture pass. Some AI providers
+	// return "graph" as a shorter alias; recognise both.
+	if file == providers.GraphSummaryPath || file == "graph" {
 		return "architecture"
 	}
-	// Find the module with the longest matching path prefix to avoid false
-	// matches on overlapping paths (e.g. "src/pay" vs "src/payment").
+	// Find the module with the longest matching path prefix. hasPathPrefix
+	// ensures the match ends on a directory boundary so "src/pay" cannot
+	// match files under "src/payment".
 	bestLen := -1
 	bestID := ""
 	for _, m := range modules {
-		if m.Path != "" && strings.HasPrefix(file, m.Path) && len(m.Path) > bestLen {
+		if m.Path != "" && hasPathPrefix(file, m.Path) && len(m.Path) > bestLen {
 			bestLen = len(m.Path)
 			bestID = m.ID
 		}
@@ -215,6 +217,17 @@ func moduleForFile(file string, modules []schema.Module) string {
 		}
 	}
 	return "unknown"
+}
+
+// hasPathPrefix reports whether file has prefix as a complete path-component
+// prefix. The match is accepted only when the prefix is immediately followed
+// by a path separator or is equal to the full file path, preventing "src/pay"
+// from matching "src/payment/file.go".
+func hasPathPrefix(file, prefix string) bool {
+	if !strings.HasPrefix(file, prefix) {
+		return false
+	}
+	return len(file) == len(prefix) || file[len(prefix)] == '/'
 }
 
 // countBySeverity tallies risks by severity level.

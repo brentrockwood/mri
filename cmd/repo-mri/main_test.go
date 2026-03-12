@@ -10,7 +10,9 @@ import (
 )
 
 // TestModuleForFile_LongestPrefixMatch verifies that overlapping module paths
-// resolve to the most specific (longest) match rather than the first match.
+// resolve to the most specific (longest) match rather than the first match,
+// and that path boundary checking prevents "src/pay" from matching
+// files under "src/payment".
 func TestModuleForFile_LongestPrefixMatch(t *testing.T) {
 	modules := []schema.Module{
 		{ID: "src/pay", Path: "src/pay"},
@@ -36,14 +38,31 @@ func TestModuleForFile_LongestPrefixMatch(t *testing.T) {
 	}
 }
 
-// TestModuleForFile_GraphSummary verifies that the synthetic graph-summary
-// chunk is attributed to "architecture" rather than any real module.
+// TestModuleForFile_PathBoundary verifies that a module path is not matched
+// when the prefix ends mid-component (e.g. "src/pay" must not match
+// "src/payment/file.go" when "src/payment" is not a known module).
+func TestModuleForFile_PathBoundary(t *testing.T) {
+	modules := []schema.Module{
+		{ID: "src/pay", Path: "src/pay"},
+	}
+	// "src/payment/file.go" starts with "src/pay" but the next char is 'm',
+	// not '/', so it must not be attributed to the src/pay module.
+	if got := moduleForFile("src/payment/file.go", modules); got != "unknown" {
+		t.Errorf("moduleForFile(%q) = %q, want %q", "src/payment/file.go", got, "unknown")
+	}
+}
+
+// TestModuleForFile_GraphSummary verifies that both the canonical and the
+// AI-provider alias for the synthetic architecture chunk are attributed to
+// "architecture".
 func TestModuleForFile_GraphSummary(t *testing.T) {
 	modules := []schema.Module{
 		{ID: "internal", Path: "internal"},
 	}
-	if got := moduleForFile("graph-summary", modules); got != "architecture" {
-		t.Errorf("moduleForFile(%q) = %q, want %q", "graph-summary", got, "architecture")
+	for _, path := range []string{"graph-summary", "graph"} {
+		if got := moduleForFile(path, modules); got != "architecture" {
+			t.Errorf("moduleForFile(%q) = %q, want %q", path, got, "architecture")
+		}
 	}
 }
 

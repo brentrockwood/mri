@@ -266,3 +266,16 @@ Phase 7 CLI hardening complete. Implemented all 5 items:
 5 new tests added. All tests pass with race detector. Lint and build clean.
 
 ---
+
+## [2026-03-12T17:14:11-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `a1c96f9` | **sha256**: `43d607769f29`
+
+Self-review and CodeRabbit review of Phase 7. Fixed 3 real issues:
+1. hasPathPrefix boundary check prevents src/pay matching src/payment/...
+2. "graph" AI-provider alias restored in moduleForFile
+3. Output dir mode 0o750 → 0o700
+
+Skipped 6 false positives (clone injection, API key validation, fileSize bounds, mktemp, AI_SESSION.md timestamps, project.md).
+Added TestModuleForFile_PathBoundary. All tests pass, lint clean.
+
+---
