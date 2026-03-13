@@ -77,14 +77,7 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: 12,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 50,
-        width: 340,
-      }}
+      className="absolute top-[2em] left-1/2 -translate-x-1/2 z-50 w-[340px]"
       onMouseDown={(e) => e.stopPropagation()} // prevent SVG pan starting
     >
       {/* Input */}
@@ -97,86 +90,38 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search modules, files, findings…"
-        style={{
-          width: '100%',
-          boxSizing: 'border-box',
-          padding: '7px 12px',
-          background: '#1e293b',
-          border: '1px solid #334155',
-          borderRadius: showDropdown ? '6px 6px 0 0' : '6px',
-          color: '#e2e8f0',
-          fontSize: 12,
-          fontFamily: 'monospace',
-          outline: 'none',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-        }}
+        className={[
+          'w-full py-[7px] px-3 bg-panel border border-border-strong',
+          showDropdown ? 'rounded-t-md' : 'rounded-md',
+          'text-text-secondary text-xs font-mono outline-none',
+          'shadow-[0_4px_16px_rgba(0,0,0,0.5)]',
+        ].join(' ')}
       />
 
       {/* Dropdown */}
       {showDropdown && (
-        <div
-          style={{
-            background: '#1e293b',
-            border: '1px solid #334155',
-            borderTop: 'none',
-            borderRadius: '0 0 6px 6px',
-            overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-          }}
-        >
+        <div className="bg-panel border border-border-strong border-t-0 rounded-b-md overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
           {results.map((hit, i) => (
             <div
               key={hitKey(hit)}
               onMouseDown={() => handleSelect(hit)}
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 8,
-                padding: '7px 12px',
-                cursor: 'pointer',
-                background: i === activeIndex ? '#0f172a' : 'transparent',
-                borderTop: i > 0 ? '1px solid #0f172a' : 'none',
-              }}
+              className={[
+                'flex items-baseline gap-2 py-[7px] px-3 cursor-pointer',
+                i === activeIndex ? 'bg-canvas' : 'bg-transparent',
+                i > 0 ? 'border-t border-canvas' : '',
+              ].join(' ')}
             >
               <span
-                style={{
-                  fontSize: 9,
-                  fontWeight: 'bold',
-                  color: KIND_COLOR[hit.kind],
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  flexShrink: 0,
-                  width: 48,
-                }}
+                className="text-[9px] font-bold uppercase tracking-[0.06em] shrink-0 w-12"
+                style={{ color: KIND_COLOR[hit.kind] }}
               >
                 {KIND_LABEL[hit.kind]}
               </span>
-              <span
-                style={{
-                  flex: 1,
-                  color: '#e2e8f0',
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
+              <span className="flex-1 text-text-secondary text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap">
                 {hit.label}
               </span>
               {'detail' in hit && (
-                <span
-                  style={{
-                    color: '#475569',
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: 120,
-                    flexShrink: 0,
-                  }}
-                >
+                <span className="text-text-dim text-[10px] font-mono overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px] shrink-0">
                   {hit.detail}
                 </span>
               )}

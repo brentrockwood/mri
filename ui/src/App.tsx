@@ -125,17 +125,8 @@ export function App() {
   )
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100vw',
-        height: '100vh',
-        background: '#0f172a',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+    <div className="flex flex-col w-screen h-screen bg-canvas overflow-hidden">
+      <div className="flex-1 min-h-0 relative">
         <MapCanvas
           layout={layout}
           analysis={analysis}
