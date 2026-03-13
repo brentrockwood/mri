@@ -4,7 +4,7 @@ package schema
 import "time"
 
 // SchemaVersion is the current version of the analysis.json schema.
-const SchemaVersion = "1.1"
+const SchemaVersion = "1.2"
 
 // CLIVersion is the current version of the CLI.
 const CLIVersion = "0.1.0"
@@ -72,6 +72,11 @@ type Risk struct {
 	Description   string  `json:"description"`
 	Confidence    float64 `json:"confidence"`
 	EvidenceLines []int   `json:"evidence_lines,omitempty"`
+	// TargetType classifies what the finding targets: "file", "module", or
+	// "repository". Set during risk conversion in the analysis pipeline.
+	TargetType string `json:"target_type,omitempty"`
+	// TargetID is the file path, module ID, or repo name depending on TargetType.
+	TargetID string `json:"target_id,omitempty"`
 }
 
 // File holds per-file metrics.

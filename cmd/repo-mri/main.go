@@ -105,6 +105,7 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 
 		// Convert findings to risks (IDs assigned after dedup — see below).
 		for _, f := range findings {
+			tt, tid := findingTarget(f.Type, f.File, result.Analysis.Repo.Name)
 			result.Analysis.Risks = append(result.Analysis.Risks, schema.Risk{
 				Severity:      f.Severity,
 				Type:          f.Type,
@@ -115,6 +116,8 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 				Description:   f.Description,
 				Confidence:    f.Confidence,
 				EvidenceLines: f.EvidenceLines,
+				TargetType:    tt,
+				TargetID:      tid,
 			})
 		}
 
@@ -228,6 +231,16 @@ func hasPathPrefix(file, prefix string) bool {
 		return false
 	}
 	return len(file) == len(prefix) || file[len(prefix)] == '/'
+}
+
+// findingTarget returns the TargetType and TargetID for a finding.
+// Architecture findings target the whole repository; all others target the
+// specific source file where the issue was detected.
+func findingTarget(typ, file, repoName string) (targetType, targetID string) {
+	if typ == string(providers.PassArchitecture) {
+		return "repository", repoName
+	}
+	return "file", file
 }
 
 // countBySeverity tallies risks by severity level.

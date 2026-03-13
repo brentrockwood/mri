@@ -637,3 +637,26 @@ send 'er gate passed for Phase 8. Branch: phase-8-go-package-modules. gosec: 0. 
 
 EOF
 
+
+---
+date: 2026-03-12T20:16:18-0400
+hash: hfYmo2RJrpYg7TFD1jXFfGcAuoBbnYXYX7K1ekeBln8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 0a0dfede95184554a00056b2992dfe6cf43142e4
+---
+
+Phase 9: Architecture finding target model. Branch: phase-9-architecture-target-model.
+
+Changes:
+- schema/analysis.go: added TargetType and TargetID fields to Risk; SchemaVersion 1.1 → 1.2.
+- cmd/repo-mri/main.go: findingTarget() helper sets TargetType/TargetID during finding→risk conversion. Architecture→"repository"/repoName, bug/security→"file"/file.
+- internal/report/report.go: filterRisks() helper added; Architecture Findings section added (TargetType="repository"); high-severity section excludes repository targets; security section uses TargetType="file" && Type="security".
+- internal/report/report_test.go: updated existing tests to set TargetType; added TestArchitectureSectionAppearsForRepositoryTarget, TestArchitectureSectionSkippedWhenNone, TestTargetTypeRoutingAllThree.
+- cmd/repo-mri/main_test.go: added TestFindingTarget (table-driven, all three pass types).
+- CHANGELOG.md: documented breaking change.
+
+All tests pass.
+
+EOF
+
