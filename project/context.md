@@ -1004,3 +1004,24 @@ Gates: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 iss
 
 EOF
 
+
+---
+date: 2026-03-13T15:18:10-0400
+hash: 16XaSgQbD3JldVu/HiTkkLBjaflIanFXfeDjhYH6BSg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d7d5d5c81a5d7926202089ead383a828245117ef
+---
+
+Phase Modules-JS: Implemented package.json-aware JS/TS module detection in internal/ingestion/ingestion.go.
+
+Added findJSProjectRoots() which walks the tree for non-root package.json files (respecting skipDirs). Updated moduleID() signature to accept jsProjectRoots []string — TS/JS files under a project root now collapse to that root; falls back to directory-level granularity when no package.json found. Wired into Ingest(). Added "io/fs" import.
+
+Tests: Updated TestModuleID to pass jsProjectRoots param and added project-root grouping cases. Added TestIngest_TSProjectRootGrouping (temp repo with ui/package.json, verifies all 4 TS files → module "ui", no intra-module deps recorded).
+
+Verified on mri repo: `ui` module now shows 26 files (was 8 fragmented modules). All gates clean: gosec 0 issues, goimports clean, go vet clean, go test -race pass, go build pass, 64 Vitest pass, ESLint clean.
+
+Branch: phase-ui-6
+
+EOF
+

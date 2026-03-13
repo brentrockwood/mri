@@ -290,6 +290,39 @@ Builds on the Tailwind foundation from UI-6-css.
 - *Command palette*: a floating non-movable toolbar (two icon buttons — Home to z=1, Reflow to re-run layout for current viewport) in the style of CAD application viewport controls.
 - *Selection vs. navigation*: the single/double-click model introduced here is the foundation; future phases may extend it (e.g. multi-select, range highlight).
 
+### Phase 7 - Modules-JS — package.json-aware JS/TS module detection
+
+The ingestion pipeline currently assigns TypeScript and JavaScript files to modules
+using the full directory path (e.g. `ui/src/components`). This is correct for pure
+TypeScript repos but produces a fragmented picture for mixed-language repos like this
+one: `vite.config.ts` lands in a `ui` module of one file while the actual app code
+splits into `ui/src`, `ui/src/components`, `ui/src/hooks`, etc.
+
+A `package.json` file is the canonical marker of a self-contained JS/TS project. When
+one appears in a non-root subdirectory, all TypeScript and JavaScript files within that
+subtree belong to one logical unit.
+
+**Rule:**
+- Non-root `package.json` → all TS/JS files in that subtree share one module named after the project directory (e.g. all `ui/**/*.ts(x)` → module `ui`).
+- No non-root `package.json` (pure TS/JS repo, or individual files outside any project) → fall back to directory-level granularity (same as Go).
+- Do not descend into `.gitignore`d trees like `node-modules`.
+
+**Implementation — `internal/ingestion/ingestion.go`:**
+- Add `findJSProjectRoots(root string) []string`: walk the tree, collect repo-relative slash paths of non-root directories that contain `package.json`. Respect the same `skipDirs` and hidden-dir rules as the main walker.
+- Update `moduleID(relPath, language string, jsProjectRoots []string) string`: for `typescript`/`javascript`, check whether the file is under a project root prefix first; if so, return that prefix. Otherwise, fall back to `strings.LastIndex` (directory-level).
+- In `Ingest()`: call `findJSProjectRoots(root)` after resolving the repo root, thread the result through every `moduleID` call.
+
+**Tests:**
+- Update `TestModuleID` to pass `jsProjectRoots`; add cases for project-root grouping and the directory-level fallback.
+- Add `TestIngest_TSProjectRootGrouping`: temp repo with `ui/package.json` + TS files at multiple depths; assert all collapse into module `ui`.
+- Existing `TestIngest_TypeScriptPackageLevelModules` (no `package.json` present) continues to verify the directory-level fallback.
+
+---
+
+## Future
+
+- **Material UI component library**: replace the hand-rolled Tailwind UI components (Inspector, SearchBar, StatusBar, Tooltip) with Material UI equivalents. MUI's `Drawer`, `TextField`, `Chip`, `Tooltip`, `Table`, and theming system would clean up a large amount of rough edge-case styling and improve accessibility out of the box. Requires defining a dark-mode MUI theme that matches the existing design token palette. The SVG graph canvas (`MapCanvas`) would remain unchanged — MUI is for the surrounding shell only.
+
 ---
 
 ## Error Handling

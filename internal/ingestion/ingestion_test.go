@@ -121,30 +121,40 @@ func TestIngest_NonGoTopLevelModules(t *testing.T) {
 // TestModuleID verifies the moduleID helper for Go and non-Go languages.
 func TestModuleID(t *testing.T) {
 	tests := []struct {
-		relPath  string
-		language string
-		want     string
+		relPath        string
+		language       string
+		jsProjectRoots []string
+		want           string
 	}{
 		// Go: package-level granularity
-		{"internal/analysis/analyzer.go", "go", "internal/analysis"},
-		{"internal/ingestion/ingest.go", "go", "internal/ingestion"},
-		{"cmd/repo-mri/main.go", "go", "cmd/repo-mri"},
-		{"schema/analysis.go", "go", "schema"},
-		{"main.go", "go", "root"},
+		{"internal/analysis/analyzer.go", "go", nil, "internal/analysis"},
+		{"internal/ingestion/ingest.go", "go", nil, "internal/ingestion"},
+		{"cmd/repo-mri/main.go", "go", nil, "cmd/repo-mri"},
+		{"schema/analysis.go", "go", nil, "schema"},
+		{"main.go", "go", nil, "root"},
 		// Non-Go (except TS/JS): top-level directory
-		{"src/main.py", "python", "src"},
-		{"payments/processor.py", "python", "payments"},
-		// TypeScript and JavaScript: directory-level granularity
-		{"ui/src/components/Button.tsx", "typescript", "ui/src/components"},
-		{"ui/src/lib/risk.ts", "typescript", "ui/src/lib"},
-		{"ui/src/App.tsx", "typescript", "ui/src"},
-		{"src/app.js", "javascript", "src"},
-		{"index.js", "javascript", "root"},
+		{"src/main.py", "python", nil, "src"},
+		{"payments/processor.py", "python", nil, "payments"},
+		// TypeScript and JavaScript: directory-level granularity (no project roots)
+		{"ui/src/components/Button.tsx", "typescript", nil, "ui/src/components"},
+		{"ui/src/lib/risk.ts", "typescript", nil, "ui/src/lib"},
+		{"ui/src/App.tsx", "typescript", nil, "ui/src"},
+		{"src/app.js", "javascript", nil, "src"},
+		{"index.js", "javascript", nil, "root"},
+		// TypeScript with project root: all ui/** → "ui"
+		{"ui/vite.config.ts", "typescript", []string{"ui"}, "ui"},
+		{"ui/src/App.tsx", "typescript", []string{"ui"}, "ui"},
+		{"ui/src/components/Button.tsx", "typescript", []string{"ui"}, "ui"},
+		{"ui/src/lib/risk.ts", "typescript", []string{"ui"}, "ui"},
+		// JavaScript with project root
+		{"frontend/src/index.js", "javascript", []string{"frontend"}, "frontend"},
+		// File not under any project root → directory-level fallback
+		{"other/index.ts", "typescript", []string{"ui"}, "other"},
 	}
 	for _, tt := range tests {
-		got := moduleID(tt.relPath, tt.language)
+		got := moduleID(tt.relPath, tt.language, tt.jsProjectRoots)
 		if got != tt.want {
-			t.Errorf("moduleID(%q, %q) = %q, want %q", tt.relPath, tt.language, got, tt.want)
+			t.Errorf("moduleID(%q, %q, %v) = %q, want %q", tt.relPath, tt.language, tt.jsProjectRoots, got, tt.want)
 		}
 	}
 }
@@ -197,6 +207,51 @@ import { risk } from '../lib/risk'
 	for _, dep := range wantDeps {
 		if !depSet[dep] {
 			t.Errorf("missing dependency %q; got deps: %v", dep, result.Analysis.Dependencies)
+		}
+	}
+}
+
+// TestIngest_TSProjectRootGrouping verifies that when a non-root package.json
+// exists, all TS/JS files under that directory are assigned to a single module.
+func TestIngest_TSProjectRootGrouping(t *testing.T) {
+	root := t.TempDir()
+
+	// ui/package.json marks the ui subtree as one JS project.
+	writeTestFile(t, root, "ui/package.json", `{"name":"ui"}`)
+	writeTestFile(t, root, "ui/vite.config.ts", `// vite config`)
+	writeTestFile(t, root, "ui/src/App.tsx", `// app`)
+	writeTestFile(t, root, "ui/src/components/Button.tsx", `// button`)
+	writeTestFile(t, root, "ui/src/lib/risk.ts", `export const risk = 1`)
+
+	result, err := Ingest(context.Background(), root)
+	if err != nil {
+		t.Fatalf("Ingest: %v", err)
+	}
+
+	modIDs := map[string]bool{}
+	for _, m := range result.Analysis.Modules {
+		modIDs[m.ID] = true
+	}
+
+	// All TS files under ui/ should collapse into a single "ui" module.
+	if !modIDs["ui"] {
+		t.Errorf("expected module %q; got %v", "ui", modIDs)
+	}
+	for id := range modIDs {
+		if id != "ui" {
+			t.Errorf("unexpected module %q (expected only \"ui\")", id)
+		}
+	}
+
+	// All files in the same module → no dependencies.
+	if len(result.Analysis.Dependencies) != 0 {
+		t.Errorf("expected no dependencies within single module; got %v", result.Analysis.Dependencies)
+	}
+
+	// The "ui" module should have 4 TypeScript files.
+	for _, m := range result.Analysis.Modules {
+		if m.ID == "ui" && m.FileCount != 4 {
+			t.Errorf("module %q: FileCount = %d, want 4", m.ID, m.FileCount)
 		}
 	}
 }
