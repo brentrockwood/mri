@@ -6,6 +6,7 @@ import { complexityColor, hasHighSeverityRisk } from '../lib/risk'
 import { topSegment } from '../layout/layered'
 
 const LABEL_MAX = 22
+const DIM_OPACITY = 0.2
 
 function truncate(s: string, max: number): string {
   return s.length > max ? `${s.slice(0, max - 1)}\u2026` : s
@@ -32,6 +33,23 @@ function scoreFor(nodeId: string, modules: Module[], isArchLevel: boolean): numb
 function glowFor(nodeId: string, risks: Risk[], isArchLevel: boolean): boolean {
   if (!isArchLevel) return hasHighSeverityRisk(nodeId, risks)
   return risks.some((r) => topSegment(r.module) === nodeId && r.severity === 'high')
+}
+
+/**
+ * Whether a node should be dimmed based on the active search filter.
+ * When matchingIds is null, no search is active and nothing is dimmed.
+ * At architecture level, a segment is dimmed only if none of its constituent
+ * modules appear in matchingIds.
+ */
+function dimFor(
+  nodeId: string,
+  matchingIds: Set<string> | null,
+  isArchLevel: boolean,
+): boolean {
+  if (matchingIds === null) return false
+  if (!isArchLevel) return !matchingIds.has(nodeId)
+  // Arch level: dim unless at least one matching module belongs to this segment
+  return ![...matchingIds].some((id) => topSegment(id) === nodeId)
 }
 
 // ── Edge endpoints ────────────────────────────────────────────────────────────
@@ -96,11 +114,12 @@ interface NodeProps {
   glow: boolean
   glowId: string
   selected: boolean
+  dimmed: boolean
   onClick: (id: string) => void
   onHover: (id: string | null) => void
 }
 
-function GraphNode({ node, score, glow, glowId, selected, onClick, onHover }: NodeProps) {
+function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHover }: NodeProps) {
   const { id, x, y, width, height } = node
   const fill = complexityColor(score)
   const strokeColor = selected ? '#f8fafc' : '#1e293b'
@@ -110,7 +129,7 @@ function GraphNode({ node, score, glow, glowId, selected, onClick, onHover }: No
       onClick={(e) => { e.stopPropagation(); onClick(id) }}
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
-      style={{ cursor: 'pointer' }}
+      style={{ cursor: 'pointer', opacity: dimmed ? DIM_OPACITY : 1 }}
     >
       <rect
         x={x}
@@ -173,6 +192,8 @@ export interface MapCanvasProps {
   isArchLevel: boolean
   viewBox: ViewBox
   selectedId: string | null
+  /** Set of module IDs that match the active search; null means no active search. */
+  matchingIds: Set<string> | null
   svgRef: React.RefObject<SVGSVGElement>
   onNodeClick: (id: string) => void
   onNodeHover: (id: string | null) => void
@@ -188,6 +209,7 @@ export function MapCanvas({
   isArchLevel,
   viewBox,
   selectedId,
+  matchingIds,
   svgRef,
   onNodeClick,
   onNodeHover,
@@ -240,6 +262,7 @@ export function MapCanvas({
             glow={glowFor(node.id, risks, isArchLevel)}
             glowId={glowId}
             selected={node.id === selectedId}
+            dimmed={dimFor(node.id, matchingIds, isArchLevel)}
             onClick={onNodeClick}
             onHover={onNodeHover}
           />

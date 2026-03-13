@@ -106,5 +106,17 @@ export function useZoom(canvasWidth: number, canvasHeight: number) {
     isPanning.current = false
   }, [])
 
-  return { viewBox, isPanning, svgRef, handleMouseDown, handleMouseMove, stopPan }
+  /**
+   * Pans the viewBox to centre on the given canvas point, preserving the
+   * current zoom level (width/height unchanged).
+   */
+  const centerOn = useCallback((cx: number, cy: number) => {
+    setViewBox((prev) => ({
+      ...prev,
+      x: cx - prev.width / 2,
+      y: cy - prev.height / 2,
+    }))
+  }, [])
+
+  return { viewBox, isPanning, svgRef, handleMouseDown, handleMouseMove, stopPan, centerOn }
 }
