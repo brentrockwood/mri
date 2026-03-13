@@ -11,14 +11,21 @@ const LEVELS: ZoomLevel[] = [1, 2, 3]
 
 interface StatusBarProps {
   level: ZoomLevel
+  selectedId: string | null
   analysis: Analysis
   onLevelChange: (level: ZoomLevel) => void
 }
 
-export function StatusBar({ level, analysis, onLevelChange }: StatusBarProps) {
+export function StatusBar({ level, selectedId, analysis, onLevelChange }: StatusBarProps) {
   const { repo, risks } = analysis
   const highCount = risks.filter((r) => r.severity === 'high').length
   const medCount = risks.filter((r) => r.severity === 'medium').length
+
+  // Build breadcrumb: show the path through zoom levels up to the current view.
+  const crumbs: string[] = []
+  if (level >= 1) crumbs.push('Architecture')
+  if (level >= 2) crumbs.push('Modules')
+  if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
     <div
@@ -56,6 +63,20 @@ export function StatusBar({ level, analysis, onLevelChange }: StatusBarProps) {
           </button>
         ))}
       </div>
+
+      <span style={{ color: '#475569' }}>|</span>
+
+      {/* Breadcrumb */}
+      <span style={{ color: '#475569' }}>
+        {crumbs.map((crumb, i) => (
+          <span key={`${crumb}-${i}`}>
+            {i > 0 && <span style={{ margin: '0 4px', color: '#334155' }}>›</span>}
+            <span style={{ color: i === crumbs.length - 1 ? '#cbd5e1' : '#475569' }}>
+              {crumb}
+            </span>
+          </span>
+        ))}
+      </span>
 
       <span style={{ color: '#475569' }}>|</span>
 

@@ -871,3 +871,48 @@ Branch: phase-ui-3a-app-deep-links
 
 EOF
 
+
+---
+date: 2026-03-13T02:16:46-0400
+hash: efbqi40Vs2bdcPwakzcFktyiU/M5foYsBMJAL9SkGXE=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 382ec05fddcc6ae7811f38ec814688d3d7498eed
+---
+
+Phase UI-4: Search implemented.
+
+New:
+- ui/src/lib/search.ts: search() (case-insensitive substring match across modules/files/findings, max 5/kind), matchingModuleIds() (full scan, no limit — per CodeRabbit fix), hitKey()
+- ui/src/lib/search.test.ts: 15 tests
+- ui/src/components/SearchBar.tsx: controlled search input (query/onQueryChange props owned by App) with keyboard nav, dropdown, kind badges
+
+Updated:
+- ui/src/components/MapCanvas.tsx: matchingIds prop + dimFor() helper for arch-aware node dimming (opacity 0.2 for non-matching nodes)
+- ui/src/components/StatusBar.tsx: selectedId prop + breadcrumb (Architecture › Modules › selectedId); composite React key fix (CodeRabbit)
+- ui/src/hooks/useZoom.ts: centerOn(cx, cy) — pans viewBox to centre on canvas point, preserves zoom
+- ui/src/App.tsx: searchQuery state, pendingCenterId for post-layout centering, SearchBar wired as controlled component
+
+CodeRabbit findings fixed: duplicate React key in breadcrumb, matchingModuleIds truncation, SearchBar controlled/uncontrolled mismatch.
+MRI: 0 static findings (AI passes unavailable — low API credit).
+64 Vitest tests pass. ESLint clean. Vite build 165 kB.
+
+Branch: phase-ui-4-search
+
+EOF
+
+
+---
+date: 2026-03-13T07:29:35-0400
+hash: la59dHynYq3oC7YtXq8ihMeSr4z/nuE9FlyCyPCCtLA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 65cbdec51498535dad38efe6ab3af836b6eef6cf
+---
+
+Phase UI-4 send 'er gate complete. All checks pass: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success), Vitest 64/64, ESLint clean.
+
+Branch: phase-ui-4-search
+
+EOF
+

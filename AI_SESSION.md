@@ -160,3 +160,32 @@ gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -ra
 phase-ui-3a-app-deep-links
 
 ---
+
+## [2026-03-13T07:29:46-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `65cbdec` | **sha256**: `867a221cc8b8`
+
+## Phase UI-4 Session Summary
+
+### Work completed
+
+**Phase UI-4: Search, node dimming, breadcrumb, map centering**
+
+- `lib/search.ts`: `search()` case-insensitive substring match across modules/files/findings (max 5 per kind for dropdown), `matchingModuleIds()` full-scan with no truncation (CodeRabbit fix), `hitKey()`
+- `lib/search.test.ts`: 15 tests
+- `SearchBar.tsx`: controlled component (query/onQueryChange owned by App), keyboard nav (↑↓ Enter Esc), typed dropdown with Module/File/Finding badges
+- `MapCanvas.tsx`: `matchingIds: Set<string> | null` prop + arch-aware `dimFor()` dims non-matching nodes to 20% opacity
+- `StatusBar.tsx`: `selectedId` prop + breadcrumb (`Architecture › Modules › selectedId`); composite React key fix (CodeRabbit)
+- `useZoom.ts`: `centerOn(cx, cy)` pans viewBox to a canvas point preserving zoom level
+- `App.tsx`: `searchQuery` state, `pendingCenterId` for post-layout centering via `useEffect`, SearchBar wired as controlled (CodeRabbit fix)
+
+### Post-phase reviews
+- CodeRabbit: 3 findings, all fixed (duplicate React key, matchingModuleIds truncation, SearchBar controlled/uncontrolled mismatch)
+- MRI tool: 0 static findings (AI passes unavailable — low API credit)
+
+### Gate results
+gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success), Vitest 64/64, ESLint clean.
+
+### Branch
+phase-ui-4-search
+
+---
