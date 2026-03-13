@@ -279,15 +279,15 @@ func TestArchitectureSectionAppearsForRepositoryTarget(t *testing.T) {
 	a := minimalAnalysis()
 	a.Risks = []schema.Risk{
 		{
-			Severity:   "high",
-			Type:       "architecture",
-			TargetType: "repository",
-			TargetID:   "test-repo",
-			Module:     "architecture",
-			File:       "graph-summary",
-			Title:      "Circular dependency",
+			Severity:    "high",
+			Type:        "architecture",
+			TargetType:  "repository",
+			TargetID:    "test-repo",
+			Module:      "architecture",
+			File:        "graph-summary",
+			Title:       "Circular dependency",
 			Description: "pkg/alpha imports pkg/beta and vice versa.",
-			Confidence: 0.9,
+			Confidence:  0.9,
 		},
 	}
 	content := buildReport(&a)
