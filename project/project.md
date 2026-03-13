@@ -239,6 +239,57 @@ Encode navigational state in the URL hash so the browser back/forward buttons wo
 - Update `README.md`: document `report.html` output, how to open it, and the `make ui-dev` workflow
 - Integration test: verify `report.html` is written, non-empty, and contains the repo name string after `repo-mri analyze`
 
+### Phase UI-6-css — Design System & Tailwind Migration
+
+Establish a consistent design foundation before adding more UI surface area. All style changes in subsequent phases use Tailwind utility classes; inline `style` props are removed.
+
+- Install Tailwind CSS v4 with the official Vite plugin (`@tailwindcss/vite`). No PostCSS config, no `tailwind.config.js` — v4 is configured via CSS `@import` and CSS custom properties.
+- Define design tokens in `src/index.css` as Tailwind theme extensions: colour palette (`bg-canvas`, `bg-panel`, `bg-surface`, `border-subtle`, `border-strong`, severity colours `text-risk-high/med/low`, `glow-risk-high`), font sizes (`text-detail` = 1em, `text-label` = 1.25em), spacing, and shadow presets (`shadow-panel`, `shadow-tab-active`, `shadow-tab-inactive`).
+- Migrate all inline `style` props across every component to Tailwind utility classes. No new visual changes — the output must look identical to the pre-migration state.
+- Verify `vite build` + `vite-plugin-singlefile` produces a single fully-inlined `report.html` with no external CSS references.
+- ESLint, Vitest, and Go tests all pass; visual output is unchanged.
+
+### Phase UI-6 — UI Refinements
+
+Builds on the Tailwind foundation from UI-6-css.
+
+**Inspector**
+- Add `gh` and `vs` link buttons to `FileRow` in the inspector (same `LinkButton` logic as `FindingRow`; VS Code link uses `rootPath`; GitHub link uses `repoName`).
+- Increase `FileRow` touch target height and font size (`text-label`) — these are primary navigation items, not metadata.
+- Inspector panel gets a left-side shadow (`shadow-panel`) so it visually floats above the canvas.
+- Add a **vertical activation tab** fixed to the right edge of the viewport, near the top. Clicking it toggles inspector visibility independently of selection — if nothing is selected the inspector opens in an empty state (consistent with VS Code's Properties/Files panel behaviour). Tab shows a `‹` icon when inspector is open, `›` when closed. Tab also has a shadow.
+- When the inspector is open and `inspectorOpen` is true, pass `availableWidth = containerWidth - 360` to the layout algorithm so nodes are positioned within the unobstructed area. Reflow only on explicit navigation (level change); toggling the inspector panel does not trigger reflow.
+
+**Status bar tabs**
+- Tabs are fixed-width (not `flex: 1`) with generous horizontal padding. They are positioned in the **bottom-left** corner of the canvas area, not spanning the full width.
+- Remove the `borderTop` active indicator. Instead use box shadows to create depth: the active tab looks coplanar with the canvas (shadow on sides, no shadow on top edge); inactive tabs look recessed (uniform soft shadow underneath). No coloured highlight on any tab.
+- Info row (breadcrumb + counts) moves to the remaining space in the bottom bar to the right of the tabs, or stacks below on narrow viewports.
+
+**Typography**
+- All inspector section headers, tab labels, and clickable items: `text-label` (1.25em).
+- All metadata, descriptions, file paths, and counts: `text-detail` (1em).
+- Apply consistently across Inspector, StatusBar, Tooltip, and SearchBar.
+
+**Canvas**
+- At zoom level 3 (Files), file nodes are coloured by `riskSeverity` using the same heatmap as module nodes (`complexityColor(risk_score)`). Previously they were a flat green.
+
+**Interaction model**
+- **Single click** on a canvas node: selects the node, updates the inspector, does **not** change zoom level, does **not** push to history.
+- **Double-click** on a canvas node: navigates (changes zoom level — z=1→z=2, z=2→z=3) and pushes one history entry.
+- **Inspector navigation links** (imports, imported-by, files, "in module"): single click navigates and pushes history (these are explicit navigation actions, not passive selection).
+- **Background / whitespace click**: deselects at every zoom level (closes inspector, clears `selectedId`). Consistent behaviour across z=1, z=2, z=3.
+- **History model**: only zoom level transitions push to `history`. Selection changes within a level are in-memory state only. The browser back button navigates level transitions; it does not undo individual node selections.
+
+**Hover glows**
+- All navigable items (canvas nodes, inspector file rows, import/imported-by nav items, "in module" link, activation tab) show a subtle glow on hover. Use a consistent `hover:` Tailwind variant; the glow colour should match the item's risk/severity colour where applicable, or default to a soft blue-white for neutral items.
+
+**Search bar**
+- Add `2em` top margin to the search bar so it doesn't sit flush against the top of the viewport.
+
+**Future notes (not in this phase)**
+- *Command palette*: a floating non-movable toolbar (two icon buttons — Home to z=1, Reflow to re-run layout for current viewport) in the style of CAD application viewport controls.
+- *Selection vs. navigation*: the single/double-click model introduced here is the foundation; future phases may extend it (e.g. multi-select, range highlight).
+
 ---
 
 ## Error Handling
