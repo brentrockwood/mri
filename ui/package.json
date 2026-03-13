@@ -17,6 +17,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/d3": "^7.4.3",
@@ -31,6 +32,7 @@
     "eslint-plugin-react-refresh": "^0.4.14",
     "jsdom": "^25.0.1",
     "prettier": "^3.3.3",
+    "tailwindcss": "^4.2.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vite-plugin-singlefile": "^2.1.0",

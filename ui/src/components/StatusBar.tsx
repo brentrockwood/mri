@@ -1,5 +1,6 @@
 import type { Analysis } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
+import { cn } from '../lib/cn'
 
 const LEVEL_LABELS: Record<ZoomLevel, string> = {
   1: 'Architecture',
@@ -28,31 +29,19 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div
-      style={{
-        background: '#1e293b',
-        borderTop: '1px solid #334155',
-        flexShrink: 0,
-      }}
-    >
+    <div className="bg-panel border-t border-border-subtle shrink-0">
       {/* Tab row */}
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+      <div className="flex items-stretch">
         {LEVELS.map((l) => (
           <button
             key={l}
             onClick={() => onLevelChange(l)}
-            style={{
-              flex: 1,
-              padding: '10px 4px 8px',
-              border: 'none',
-              borderTop: l === level ? '2px solid #3b82f6' : '2px solid transparent',
-              background: l === level ? '#0f172a' : 'transparent',
-              color: l === level ? '#f8fafc' : '#64748b',
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, background 0.15s',
-            }}
+            className={cn(
+              'flex-1 px-1 pt-[10px] pb-2 border-t-2 font-mono text-xs cursor-pointer transition-colors duration-150',
+              l === level
+                ? 'border-blue-500 bg-canvas text-text-primary'
+                : 'border-transparent bg-transparent text-text-muted',
+            )}
           >
             {LEVEL_LABELS[l]}
           </button>
@@ -60,37 +49,26 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
       </div>
 
       {/* Info row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '4px 16px 14px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          color: '#475569',
-          flexWrap: 'wrap',
-        }}
-      >
+      <div className="flex items-center gap-[10px] px-4 pb-[14px] pt-1 text-[11px] font-mono text-text-dim flex-wrap">
         {/* Breadcrumb */}
         <span>
           {crumbs.map((crumb, i) => (
             <span key={`${crumb}-${i}`}>
-              {i > 0 && <span style={{ margin: '0 4px', color: '#334155' }}>›</span>}
-              <span style={{ color: i === crumbs.length - 1 ? '#cbd5e1' : '#475569' }}>
+              {i > 0 && <span className="mx-1 text-border-subtle">›</span>}
+              <span className={i === crumbs.length - 1 ? 'text-text-secondary' : 'text-text-dim'}>
                 {crumb}
               </span>
             </span>
           ))}
         </span>
 
-        <span style={{ color: '#334155' }}>|</span>
+        <span className="text-border-subtle">|</span>
 
         {/* Summary counts */}
         <span>{repo.module_count} modules</span>
         <span>{repo.file_count} files</span>
-        {highCount > 0 && <span style={{ color: '#f87171' }}>{highCount} high</span>}
-        {medCount > 0 && <span style={{ color: '#facc15' }}>{medCount} med</span>}
+        {highCount > 0 && <span className="text-risk-high">{highCount} high</span>}
+        {medCount > 0 && <span className="text-risk-med">{medCount} med</span>}
       </div>
     </div>
   )

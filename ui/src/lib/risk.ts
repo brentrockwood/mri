@@ -7,6 +7,20 @@ export function riskSeverity(score: number): 'high' | 'medium' | 'low' {
   return 'low'
 }
 
+/** Maps a severity label to a Tailwind text-colour class. */
+export function severityColorClass(severity: string): string {
+  if (severity === 'high') return 'text-risk-high'
+  if (severity === 'medium') return 'text-risk-med'
+  return 'text-risk-low'
+}
+
+/** Maps a complexity score to a human-readable band label. */
+export function complexityBand(score: number): string {
+  if (score >= 0.7) return 'High'
+  if (score >= 0.4) return 'Moderate'
+  return 'Low'
+}
+
 /** Returns true if any risk in the list targets the given module with HIGH severity. */
 export function hasHighSeverityRisk(moduleId: string, risks: Risk[]): boolean {
   return risks.some((r) => r.module === moduleId && r.severity === 'high')

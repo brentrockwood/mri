@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -160,7 +161,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		if u, err := url.Parse(source); err == nil {
 			slug := strings.TrimSuffix(strings.TrimPrefix(u.Path, "/"), "/")
 			slug = strings.TrimSuffix(slug, ".git")
-			repoName = filepath.Base(slug)
+			repoName = path.Base(slug)
 			// Capture the full "owner/repo" slug for GitHub deep links.
 			if strings.Count(slug, "/") == 1 {
 				githubSlug = slug

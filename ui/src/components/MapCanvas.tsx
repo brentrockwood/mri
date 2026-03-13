@@ -129,7 +129,8 @@ function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHov
       onClick={(e) => { e.stopPropagation(); onClick(id) }}
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
-      style={{ cursor: 'pointer', opacity: dimmed ? DIM_OPACITY : 1 }}
+      className="cursor-pointer"
+      style={{ opacity: dimmed ? DIM_OPACITY : 1 }}
     >
       <rect
         x={x}
@@ -149,7 +150,7 @@ function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHov
         fontSize={12}
         fontFamily="monospace"
         fill="#1e293b"
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
+        className="pointer-events-none select-none"
       >
         {nodeLabel(id)}
       </text>
@@ -232,7 +233,7 @@ export function MapCanvas({
     <svg
       ref={svgRef}
       viewBox={vbStr}
-      style={{ display: 'block', width: '100%', height: '100%', background: '#0f172a' }}
+      className="block w-full h-full bg-canvas"
       onClick={onBackgroundClick}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
