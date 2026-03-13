@@ -165,7 +165,7 @@ func TestReportModuleTable(t *testing.T) {
 func TestHighSeveritySectionSkippedWhenNone(t *testing.T) {
 	a := minimalAnalysis()
 	a.Risks = []schema.Risk{
-		{Severity: "low", Type: "style", Module: "pkg/alpha", File: "a.go", Title: "low finding"},
+		{Severity: "low", Type: "style", TargetType: "file", Module: "pkg/alpha", File: "a.go", Title: "low finding"},
 	}
 	content := buildReport(&a)
 
@@ -179,7 +179,7 @@ func TestHighSeveritySectionSkippedWhenNone(t *testing.T) {
 func TestSecuritySectionSkippedWhenNone(t *testing.T) {
 	a := minimalAnalysis()
 	a.Risks = []schema.Risk{
-		{Severity: "high", Type: "complexity", Module: "pkg/alpha", File: "a.go",
+		{Severity: "high", Type: "complexity", TargetType: "file", Module: "pkg/alpha", File: "a.go",
 			Title: "complex fn", Confidence: 0.9},
 	}
 	content := buildReport(&a)
@@ -195,7 +195,7 @@ func TestBothSectionsPresentWhenApplicable(t *testing.T) {
 	a := minimalAnalysis()
 	a.Risks = []schema.Risk{
 		{
-			Severity: "high", Type: "security", Module: "pkg/alpha", File: "auth.go",
+			Severity: "high", Type: "security", TargetType: "file", Module: "pkg/alpha", File: "auth.go",
 			Title: "SQL injection", Description: "User input unsanitized.",
 			Confidence: 0.95,
 		},
@@ -216,7 +216,7 @@ func TestHighSeveritySectionGroupsByModule(t *testing.T) {
 	a := minimalAnalysis()
 	a.Risks = []schema.Risk{
 		{
-			Severity: "high", Type: "complexity", Module: "pkg/alpha", File: "a.go",
+			Severity: "high", Type: "complexity", TargetType: "file", Module: "pkg/alpha", File: "a.go",
 			Title: "High complexity", Description: "Too complex.", Confidence: 0.8,
 		},
 	}
@@ -270,6 +270,103 @@ func TestGenerateWritesToCorrectPath(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "# Repo MRI Report:") {
 		t.Error("report.md missing expected header")
+	}
+}
+
+// TestArchitectureSectionAppearsForRepositoryTarget verifies the Architecture
+// Findings section is rendered when a risk has TargetType "repository".
+func TestArchitectureSectionAppearsForRepositoryTarget(t *testing.T) {
+	a := minimalAnalysis()
+	a.Risks = []schema.Risk{
+		{
+			Severity:   "high",
+			Type:       "architecture",
+			TargetType: "repository",
+			TargetID:   "test-repo",
+			Module:     "architecture",
+			File:       "graph-summary",
+			Title:      "Circular dependency",
+			Description: "pkg/alpha imports pkg/beta and vice versa.",
+			Confidence: 0.9,
+		},
+	}
+	content := buildReport(&a)
+
+	if !strings.Contains(content, "## Architecture Findings") {
+		t.Error("report missing Architecture Findings section for repository-target risk")
+	}
+	if !strings.Contains(content, "Circular dependency") {
+		t.Error("report missing architecture finding title")
+	}
+}
+
+// TestArchitectureSectionSkippedWhenNone verifies the Architecture Findings
+// section is omitted when no risks have TargetType "repository".
+func TestArchitectureSectionSkippedWhenNone(t *testing.T) {
+	a := minimalAnalysis()
+	a.Risks = []schema.Risk{
+		{Severity: "high", Type: "bug", TargetType: "file", Module: "pkg/alpha", File: "a.go",
+			Title: "nil deref", Confidence: 0.8},
+	}
+	content := buildReport(&a)
+
+	if strings.Contains(content, "## Architecture Findings") {
+		t.Error("report should not contain Architecture Findings section when no repository-target risks")
+	}
+}
+
+// TestTargetTypeRoutingAllThree verifies the three TargetType values each route
+// to the correct report section.
+func TestTargetTypeRoutingAllThree(t *testing.T) {
+	a := minimalAnalysis()
+	a.Risks = []schema.Risk{
+		// repository-target: architecture section
+		{
+			Severity: "medium", Type: "architecture", TargetType: "repository", TargetID: "test-repo",
+			Module: "architecture", File: "graph-summary",
+			Title: "Layer violation", Description: "cmd imports internal directly.", Confidence: 0.7,
+		},
+		// file-target, high-severity: high section
+		{
+			Severity: "high", Type: "bug", TargetType: "file", TargetID: "pkg/alpha/a.go",
+			Module: "pkg/alpha", File: "pkg/alpha/a.go",
+			Title: "Nil pointer", Description: "ptr dereferenced before check.", Confidence: 0.85,
+		},
+		// file-target, security: security section
+		{
+			Severity: "medium", Type: "security", TargetType: "file", TargetID: "pkg/alpha/auth.go",
+			Module: "pkg/alpha", File: "pkg/alpha/auth.go",
+			Title: "Hardcoded secret", Description: "API key in source.", Confidence: 0.95,
+		},
+	}
+	content := buildReport(&a)
+
+	tests := []struct {
+		section string
+		title   string
+	}{
+		{"## Architecture Findings", "Layer violation"},
+		{"## High-Severity Findings", "Nil pointer"},
+		{"## Security Findings", "Hardcoded secret"},
+	}
+	for _, tc := range tests {
+		if !strings.Contains(content, tc.section) {
+			t.Errorf("report missing section %q", tc.section)
+		}
+		if !strings.Contains(content, tc.title) {
+			t.Errorf("report missing finding %q", tc.title)
+		}
+	}
+
+	// Architecture finding must NOT appear in the file-level high-severity section.
+	// Locate high section and verify "Layer violation" is not in it.
+	highIdx := strings.Index(content, "## High-Severity Findings")
+	secIdx := strings.Index(content, "## Security Findings")
+	if highIdx != -1 && secIdx != -1 {
+		highSection := content[highIdx:secIdx]
+		if strings.Contains(highSection, "Layer violation") {
+			t.Error("architecture finding should not appear in High-Severity Findings section")
+		}
 	}
 }
 

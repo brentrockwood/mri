@@ -346,3 +346,27 @@ Post-review: 4 tool findings (all false positives), 1 CodeRabbit finding (genera
 send 'er gate: gosec 0, go vet clean, golangci-lint clean, go test -race all pass, go build clean.
 
 ---
+
+## [2026-03-12T20:13:10-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `0a0dfed` | **sha256**: `c9cb04360f0b`
+
+Merged. Proceed with phase 9.
+
+---
+
+## [2026-03-12T21:12:22-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f131a3a` | **sha256**: `28199a71a63a`
+
+Phase 9 — Architecture Finding Target Model.
+
+Changes:
+- schema/analysis.go: TargetType and TargetID fields added to Risk; SchemaVersion 1.1 → 1.2.
+- cmd/repo-mri/main.go: findingTarget() helper assigns TargetType/TargetID during finding→risk conversion (architecture→"repository"/repoName, bug/security→"file"/filePath).
+- internal/report/report.go: filterRisks() added; Architecture Findings section (TargetType="repository"); high-severity excludes repository targets; security filter uses TargetType="file" && Type="security".
+- New tests: TestFindingTarget, TestArchitectureSectionAppearsForRepositoryTarget, TestArchitectureSectionSkippedWhenNone, TestTargetTypeRoutingAllThree.
+- CHANGELOG.md updated.
+
+Post-review: 0 tool findings (preamble effective), 0 CodeRabbit findings.
+send 'er gate: gosec 0, go vet clean, golangci-lint clean, go test -race all pass, go build clean.
+
+---

@@ -66,6 +66,32 @@ func TestModuleForFile_GraphSummary(t *testing.T) {
 	}
 }
 
+// TestFindingTarget verifies TargetType and TargetID assignment for all pass types.
+func TestFindingTarget(t *testing.T) {
+	tests := []struct {
+		typ        string
+		file       string
+		repoName   string
+		wantType   string
+		wantID     string
+	}{
+		// Architecture findings target the repository.
+		{"architecture", "graph-summary", "my-repo", "repository", "my-repo"},
+		// Bug and security findings target the specific file.
+		{"bug", "internal/analysis/passes.go", "my-repo", "file", "internal/analysis/passes.go"},
+		{"security", "cmd/main.go", "my-repo", "file", "cmd/main.go"},
+	}
+	for _, tt := range tests {
+		gotType, gotID := findingTarget(tt.typ, tt.file, tt.repoName)
+		if gotType != tt.wantType {
+			t.Errorf("findingTarget(%q,...) targetType = %q, want %q", tt.typ, gotType, tt.wantType)
+		}
+		if gotID != tt.wantID {
+			t.Errorf("findingTarget(%q,...) targetID = %q, want %q", tt.typ, gotID, tt.wantID)
+		}
+	}
+}
+
 // TestRunAnalyze_CancelledContext verifies that a pre-cancelled context
 // surfaces as an error from runAnalyze rather than silently succeeding.
 func TestRunAnalyze_CancelledContext(t *testing.T) {
