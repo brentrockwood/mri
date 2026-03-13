@@ -79,6 +79,11 @@ import _ "github.com/test/repo/internal/ingestion"
 			t.Errorf("missing dependency %q; got deps: %v", dep, result.Analysis.Dependencies)
 		}
 	}
+
+	// Local analysis should populate RootPath with the absolute repo root.
+	if result.Analysis.Meta.RootPath != root {
+		t.Errorf("RootPath: got %q, want %q", result.Analysis.Meta.RootPath, root)
+	}
 }
 
 // TestIngest_NonGoTopLevelModules verifies that non-Go repos continue to use
@@ -137,6 +142,20 @@ func TestModuleID(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("moduleID(%q, %q) = %q, want %q", tt.relPath, tt.language, got, tt.want)
 		}
+	}
+}
+
+// TestIngest_LocalRepoHasNoGithubSlug verifies that analysing a local directory
+// does not populate the GithubSlug field (it is only set for GitHub-sourced clones).
+func TestIngest_LocalRepoHasNoGithubSlug(t *testing.T) {
+	root := t.TempDir()
+	writeTestFile(t, root, "main.go", "package main\n")
+	result, err := Ingest(context.Background(), root)
+	if err != nil {
+		t.Fatalf("Ingest() error = %v", err)
+	}
+	if result.Analysis.Repo.GithubSlug != "" {
+		t.Errorf("expected empty GithubSlug for local repo, got %q", result.Analysis.Repo.GithubSlug)
 	}
 }
 

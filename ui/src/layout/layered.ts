@@ -206,22 +206,29 @@ function empty(): LayoutResult {
  * Level 1 (Architecture): top-level path segments.
  * Level 2 (Modules): all modules, grouped by path depth.
  * Level 3 (Files): files within the selected module (falls back to Level 2 if none selected).
+ *
+ * At Level 3, `selectedId` may be either a module ID or a file path.
+ * When it is a file path, the layout shows that file's parent module's files
+ * so the canvas is never blank and the selected file node is highlighted.
  */
 export function computeLayout(
   modules: Module[],
   dependencies: Dependency[],
   files: File[],
   zoomLevel: ZoomLevel,
-  selectedModuleId: string | null,
+  selectedId: string | null,
 ): LayoutResult {
   switch (zoomLevel) {
     case 1:
       return layoutArchitecture(modules, dependencies)
     case 2:
       return layoutModules(modules, dependencies)
-    case 3:
-      return selectedModuleId !== null
-        ? layoutFiles(files, selectedModuleId)
-        : layoutModules(modules, dependencies)
+    case 3: {
+      if (selectedId === null) return layoutModules(modules, dependencies)
+      // If selectedId is a file path, use its parent module for the layout.
+      const fileEntry = files.find((f) => f.path === selectedId)
+      const moduleId = fileEntry ? fileEntry.module : selectedId
+      return layoutFiles(files, moduleId)
+    }
   }
 }

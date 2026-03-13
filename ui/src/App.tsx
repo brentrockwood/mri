@@ -15,7 +15,7 @@ import type { ZoomLevel } from './layout/types'
 
 export function App() {
   const analysis = useAnalysis()
-  const { zoomLevel, setZoomLevel, selectedId, select } = useAppNav()
+  const { zoomLevel, selectedId, select, selectAndZoom } = useAppNav()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [searchQuery, setSearchQuery] = useState('')
@@ -40,20 +40,57 @@ export function App() {
     setPendingCenterId(null)
   }, [layout, pendingCenterId, centerOn])
 
+  /** Navigate to an id+level and queue centering. Used for all click/search/inspector nav. */
+  const navigateTo = useCallback((id: string, level: ZoomLevel) => {
+    selectAndZoom(id, level)
+    setPendingCenterId(id)
+  }, [selectAndZoom])
+
+  // Clicking a node: single history push combining selection + zoom change.
   function handleNodeClick(id: string) {
-    select(id)
     setSearchQuery('')
-    // Switch to files view when a module is clicked from modules view
-    if (zoomLevel === 2) setZoomLevel(3)
+    if (zoomLevel === 2) {
+      // Module node at modules level → drill into files view.
+      navigateTo(id, 3)
+    } else if (zoomLevel === 1) {
+      // Arch node → go to modules level (no selection needed at arch level).
+      selectAndZoom(null, 2)
+    } else {
+      // Files level → select the file (stays at z=3).
+      select(id)
+    }
   }
 
   function handleSearchSelect(hit: SearchHit) {
-    const targetZoom: ZoomLevel = hit.zoomLevel
-    select(hit.moduleId)
-    if (zoomLevel !== targetZoom) setZoomLevel(targetZoom)
-    setPendingCenterId(hit.moduleId)
-    // SearchBar is controlled — clearing via onQueryChange also clears the input.
     setSearchQuery('')
+    if (hit.kind === 'file') {
+      navigateTo(hit.path, 3)
+    } else if (hit.kind === 'module') {
+      navigateTo(hit.id, 3)
+    } else {
+      // Finding: navigate to its module at z=3.
+      navigateTo(hit.moduleId, 3)
+    }
+  }
+
+  /**
+   * Handles status-bar tab clicks. Adjusts selection intelligently:
+   * - Going to z=1: clear selection (no inspector at arch level).
+   * - Going to z=2: if a file is selected, switch to its parent module.
+   * - Going to z=3: keep module selection, or keep file selection.
+   */
+  function handleLevelChange(newLevel: ZoomLevel) {
+    if (newLevel === zoomLevel) return
+    if (newLevel === 1) {
+      selectAndZoom(null, 1)
+    } else if (newLevel === 2) {
+      const selectedFile = analysis.files.find((f) => f.path === selectedId)
+      const newId = selectedFile ? selectedFile.module : selectedId
+      selectAndZoom(newId, 2)
+    } else {
+      // z=3: keep existing selection
+      selectAndZoom(selectedId, 3)
+    }
   }
 
   const handleMouseMove = useCallback(
@@ -127,6 +164,7 @@ export function App() {
             selectedId={selectedId}
             analysis={analysis}
             onClose={() => select(null)}
+            onNavigate={navigateTo}
           />
         )}
 
@@ -143,7 +181,7 @@ export function App() {
         level={zoomLevel}
         selectedId={selectedId}
         analysis={analysis}
-        onLevelChange={setZoomLevel}
+        onLevelChange={handleLevelChange}
       />
     </div>
   )

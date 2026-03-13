@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Analysis, File, Risk } from '../types/analysis'
-import { complexityColor } from '../lib/risk'
+import type { ZoomLevel } from '../layout/types'
+import { complexityColor, riskSeverity } from '../lib/risk'
 import { copyToClipboard, detectWindowsPaths, githubUrl, vscodeUrl } from '../lib/deeplinks'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,17 +81,23 @@ function LinkButton({ href, label }: { href: string; label: string }) {
 
 interface FindingRowProps {
   risk: Risk
-  repoName: string
+  /** Full "owner/repo" GitHub slug; null for local repos (hides the GH link). */
+  repoName: string | null
+  /**
+   * Absolute filesystem root of the repo (e.g. "/home/user/project").
+   * When set, VS Code deep links are constructed as root_path + '/' + file.
+   * When absent, the VS Code button is hidden (relative paths are unusable).
+   */
+  rootPath: string | null
   isWindows: boolean
 }
 
-function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
+function FindingRow({ risk, repoName, rootPath, isWindows }: FindingRowProps) {
   const line = risk.evidence_lines?.[0]
-  const ghUrl = githubUrl(repoName, risk.file, line)
-  const vsUrl = vscodeUrl(
-    isWindows ? risk.file : `/${risk.file}`,
-    line,
-  )
+  const ghUrl = repoName ? githubUrl(repoName, risk.file, line) : null
+  const vsUrl = rootPath
+    ? vscodeUrl(isWindows ? `${rootPath}\\${risk.file.replace(/\//g, '\\')}` : `${rootPath}/${risk.file}`, line)
+    : null
 
   return (
     <div
@@ -119,7 +126,7 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
         >
           {risk.severity}
         </span>
-        <span style={{ color: '#e2e8f0', fontSize: 12, flex: 1 }}>
+        <span style={{ color: '#e2e8f0', fontSize: 12, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>
           {risk.title}
         </span>
         <span style={{ color: '#64748b', fontSize: 10, flexShrink: 0 }}>
@@ -161,8 +168,8 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
           {risk.file}
           {line !== undefined ? `:${line}` : ''}
         </span>
-        <LinkButton href={ghUrl} label="gh" />
-        <LinkButton href={vsUrl} label="vs" />
+        {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
+        {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
         <CopyButton text={risk.file} />
       </div>
     </div>
@@ -171,10 +178,19 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
 
 // ── FileRow ───────────────────────────────────────────────────────────────────
 
-function FileRow({ file }: { file: File }) {
+interface FileRowProps {
+  file: File
+  onNavigate: (id: string, level: ZoomLevel) => void
+}
+
+function FileRow({ file, onNavigate }: FileRowProps) {
   const dotColor = complexityColor(file.risk_score)
   return (
     <div
+      onClick={() => onNavigate(file.path, 3)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate(file.path, 3)}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -183,6 +199,7 @@ function FileRow({ file }: { file: File }) {
         borderBottom: '1px solid #1e293b',
         fontSize: 11,
         fontFamily: 'monospace',
+        cursor: 'pointer',
       }}
     >
       <span
@@ -197,10 +214,12 @@ function FileRow({ file }: { file: File }) {
       <span
         style={{
           flex: 1,
-          color: '#cbd5e1',
+          color: '#93c5fd',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          textDecoration: 'underline',
+          textDecorationColor: '#334155',
         }}
       >
         {file.path.split('/').pop()}
@@ -208,7 +227,7 @@ function FileRow({ file }: { file: File }) {
       <span style={{ color: '#475569', flexShrink: 0 }}>{file.lines}L</span>
       <span
         style={{
-          color: severityColor(file.risk_score >= 0.7 ? 'high' : file.risk_score >= 0.4 ? 'medium' : 'low'),
+          color: severityColor(riskSeverity(file.risk_score)),
           flexShrink: 0,
           width: 36,
           textAlign: 'right',
@@ -216,6 +235,32 @@ function FileRow({ file }: { file: File }) {
       >
         {Math.round(file.risk_score * 100)}
       </span>
+    </div>
+  )
+}
+
+// ── NavItem ───────────────────────────────────────────────────────────────────
+
+/** Clickable row used for imports and imported-by lists. */
+function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNavigate: (id: string, level: ZoomLevel) => void }) {
+  return (
+    <div
+      onClick={() => onNavigate(id, 3)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate(id, 3)}
+      style={{
+        fontSize: 11,
+        fontFamily: 'monospace',
+        color: '#93c5fd',
+        padding: '4px 0',
+        borderBottom: '1px solid #1e293b',
+        cursor: 'pointer',
+        textDecoration: 'underline',
+        textDecorationColor: '#334155',
+      }}
+    >
+      {prefix} {id}
     </div>
   )
 }
@@ -247,33 +292,65 @@ export interface InspectorProps {
   selectedId: string
   analysis: Analysis
   onClose: () => void
+  onNavigate: (id: string, level: ZoomLevel) => void
 }
 
 /**
- * Right-side detail panel shown when a module node is selected.
- * Displays findings, dependency list, and file table for the selected module.
+ * Right-side detail panel shown when a module node or file is selected.
+ * Displays findings, dependency list, and file table.
+ * Items in the dependency and file lists are clickable for navigation.
  */
-export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
-  const { modules, risks, files, dependencies, repo } = analysis
-
-  const module = modules.find((m) => m.id === selectedId)
+export function Inspector({ selectedId, analysis, onClose, onNavigate }: InspectorProps) {
+  const { modules, risks, files, dependencies, repo, meta } = analysis
 
   const isWindows = detectWindowsPaths(files.map((f) => f.path))
+  const githubSlug = repo.github_slug ?? null
+  const rootPath = meta.root_path ?? null
 
-  const moduleRisks = risks
-    .filter((r) => r.module === selectedId)
-    .sort((a, b) => {
-      const order = { high: 0, medium: 1, low: 2 }
-      return (order[a.severity as keyof typeof order] ?? 3) -
-        (order[b.severity as keyof typeof order] ?? 3)
-    })
+  // Determine whether the selection is a module or a file.
+  const { selectedFile, module } = useMemo(() => {
+    const sf = files.find((f) => f.path === selectedId) ?? null
+    const mod = sf
+      ? modules.find((m) => m.id === sf.module) ?? null
+      : modules.find((m) => m.id === selectedId) ?? null
+    return { selectedFile: sf, module: mod }
+  }, [selectedId, files, modules])
 
-  const moduleFiles = files
-    .filter((f) => f.module === selectedId)
-    .sort((a, b) => b.risk_score - a.risk_score)
+  const displayedRisks = useMemo(
+    () =>
+      risks
+        .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
+        .sort((a, b) => {
+          const order = { high: 0, medium: 1, low: 2 }
+          return (order[a.severity as keyof typeof order] ?? 3) -
+            (order[b.severity as keyof typeof order] ?? 3)
+        }),
+    [risks, selectedFile, selectedId],
+  )
 
-  const imports = dependencies.filter((d) => d.from === selectedId).map((d) => d.to)
-  const importedBy = dependencies.filter((d) => d.to === selectedId).map((d) => d.from)
+  // Files table: shown only when viewing a module (not a file).
+  const moduleFiles = useMemo(
+    () => selectedFile ? [] : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score),
+    [selectedFile, files, selectedId],
+  )
+
+  const imports = useMemo(
+    () => selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to),
+    [selectedFile, dependencies, selectedId],
+  )
+  const importedBy = useMemo(
+    () => selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from),
+    [selectedFile, dependencies, selectedId],
+  )
+
+  // Close on Escape key.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   return (
     <div
@@ -311,9 +388,35 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               wordBreak: 'break-all',
             }}
           >
-            {selectedId}
+            {selectedFile ? selectedFile.path.split('/').pop() : selectedId}
           </div>
-          {module && (
+          {selectedFile && (
+            <div style={{ fontSize: 11, color: '#475569', marginTop: 2, fontFamily: 'monospace' }}>
+              {selectedFile.path}
+            </div>
+          )}
+          {selectedFile ? (
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <span>
+                Risk{' '}
+                <span style={{ color: severityColor(riskSeverity(selectedFile.risk_score)) }}>
+                  {Math.round(selectedFile.risk_score * 100)}
+                </span>
+              </span>
+              <span style={{ color: '#cbd5e1' }}>{selectedFile.lines}L</span>
+              {module && (
+                <span
+                  onClick={() => onNavigate(module.id, 3)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && onNavigate(module.id, 3)}
+                  style={{ color: '#93c5fd', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: '#334155' }}
+                >
+                  in {module.id}
+                </span>
+              )}
+            </div>
+          ) : module && (
             <div
               style={{
                 fontSize: 11,
@@ -326,15 +429,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               <span>
                 Risk{' '}
                 <span
-                  style={{
-                    color: severityColor(
-                      module.risk_score >= 0.7
-                        ? 'high'
-                        : module.risk_score >= 0.4
-                          ? 'medium'
-                          : 'low',
-                    ),
-                  }}
+                  style={{ color: severityColor(riskSeverity(module.risk_score)) }}
                 >
                   {Math.round(module.risk_score * 100)}
                 </span>
@@ -377,18 +472,19 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
       >
         {/* Findings */}
         <SectionHeader>
-          Findings ({moduleRisks.length})
+          Findings ({displayedRisks.length})
         </SectionHeader>
-        {moduleRisks.length === 0 ? (
+        {displayedRisks.length === 0 ? (
           <div style={{ color: '#334155', fontSize: 11, padding: '8px 0' }}>
             No findings
           </div>
         ) : (
-          moduleRisks.map((r) => (
+          displayedRisks.map((r) => (
             <FindingRow
               key={r.id}
               risk={r}
-              repoName={repo.name}
+              repoName={githubSlug}
+              rootPath={rootPath}
               isWindows={isWindows}
             />
           ))
@@ -399,18 +495,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
           <>
             <SectionHeader>Imports ({imports.length})</SectionHeader>
             {imports.map((id) => (
-              <div
-                key={id}
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#94a3b8',
-                  padding: '4px 0',
-                  borderBottom: '1px solid #1e293b',
-                }}
-              >
-                → {id}
-              </div>
+              <NavItem key={id} id={id} prefix="→" onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -419,18 +504,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
           <>
             <SectionHeader>Imported by ({importedBy.length})</SectionHeader>
             {importedBy.map((id) => (
-              <div
-                key={id}
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#94a3b8',
-                  padding: '4px 0',
-                  borderBottom: '1px solid #1e293b',
-                }}
-              >
-                ← {id}
-              </div>
+              <NavItem key={id} id={id} prefix="←" onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -455,7 +529,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               <span style={{ width: 36, textAlign: 'right' }}>risk</span>
             </div>
             {moduleFiles.map((f) => (
-              <FileRow key={f.path} file={f} />
+              <FileRow key={f.path} file={f} onNavigate={onNavigate} />
             ))}
           </>
         )}

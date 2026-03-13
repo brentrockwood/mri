@@ -1,5 +1,12 @@
 import type { Risk } from '../types/analysis'
 
+/** Maps a numeric risk score to a severity label. */
+export function riskSeverity(score: number): 'high' | 'medium' | 'low' {
+  if (score >= 0.7) return 'high'
+  if (score >= 0.4) return 'medium'
+  return 'low'
+}
+
 /** Returns true if any risk in the list targets the given module with HIGH severity. */
 export function hasHighSeverityRisk(moduleId: string, risks: Risk[]): boolean {
   return risks.some((r) => r.module === moduleId && r.severity === 'high')

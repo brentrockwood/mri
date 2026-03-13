@@ -16,9 +16,10 @@ describe('loadAnalysis', () => {
     const analysis = loadAnalysis()
     expect(analysis.repo.name).toBe('test-repo')
     expect(analysis.repo.module_count).toBe(2)
-    expect(analysis.modules).toHaveLength(1)
-    expect(analysis.modules[0].id).toBe('internal/analysis')
+    expect(analysis.modules).toHaveLength(2)
+    expect(analysis.modules.map((m) => m.id)).toContain('internal/analysis')
     expect(analysis.meta.schema_version).toBe('1.2')
+    expect(analysis.meta.root_path).toBe('/home/user/project')
   })
 
   it('throws MriDataMissingError when window.__MRI_DATA__ is absent', () => {

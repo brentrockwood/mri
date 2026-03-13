@@ -155,10 +155,24 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	})
 
 	repoName := filepath.Base(root)
+	var githubSlug string
 	if isRemoteURL(source) {
 		if u, err := url.Parse(source); err == nil {
-			repoName = strings.TrimSuffix(filepath.Base(u.Path), ".git")
+			slug := strings.TrimSuffix(strings.TrimPrefix(u.Path, "/"), "/")
+			slug = strings.TrimSuffix(slug, ".git")
+			repoName = filepath.Base(slug)
+			// Capture the full "owner/repo" slug for GitHub deep links.
+			if strings.Count(slug, "/") == 1 {
+				githubSlug = slug
+			}
 		}
+	}
+
+	// RootPath is only meaningful for local analyses; for remote repos the
+	// clone lands in a temp directory that has no value to the end user.
+	var rootPath string
+	if !isRemoteURL(source) {
+		rootPath = root
 	}
 
 	analysis := schema.Analysis{
@@ -166,9 +180,11 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 			SchemaVersion:      schema.SchemaVersion,
 			CLIVersion:         schema.CLIVersion,
 			AnalysisDurationMS: time.Since(start).Milliseconds(),
+			RootPath:           rootPath,
 		},
 		Repo: schema.Repo{
 			Name:         repoName,
+			GithubSlug:   githubSlug,
 			Languages:    languages,
 			FileCount:    len(files),
 			ModuleCount:  len(modules),
