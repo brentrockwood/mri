@@ -916,3 +916,91 @@ Branch: phase-ui-4-search
 
 EOF
 
+
+---
+date: 2026-03-13T11:51:43-0400
+hash: sI0LWvMEirFR8FLAvAlYsBSJx2L056fF7iL16yjVuRY=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 8eee479d8a266d7f7faaff9ad5346e15b4825db2
+---
+
+Phase UI-6-css complete. Branch: phase-ui-6-css
+
+Installed Tailwind CSS v4 (@tailwindcss/vite) with no PostCSS config. Created src/index.css with @import "tailwindcss" and @theme design tokens (canvas, panel, border-subtle/strong, risk-high/med/low, link, text scale, font-size-detail/label, shadow-panel/tab-active/inactive). Migrated all inline style props across App, MapCanvas, StatusBar, Tooltip, SearchBar, and Inspector to Tailwind utility classes. Dynamic computed values (complexityColor, mouse position, opacity) kept as inline styles. SVG presentation attributes unchanged.
+
+Simplify gate: extracted severityColorClass() and complexityBand() to lib/risk.ts, added lib/cn.ts (filters falsy before joining), removed redundant --color-surface token.
+
+Coderabbit gate: fixed border token names (border-strong now #475569 high-contrast, border-subtle #334155 low-contrast; renamed all usages to preserve visuals), fixed filepath.Base(slug) -> path.Base(slug) in ingestion.go for URL paths, added Space key + preventDefault to all role="button" keyboard handlers in Inspector.
+
+DOA gate: gosec clean (no HIGH), goimports fixed alignment in schema/analysis.go, go vet clean, golangci-lint 0 issues, go test -race all pass, go build clean. UI: eslint 0 warnings, vitest 64/64, vite build produces single self-contained report.html.
+
+Next: Phase UI-6 — visual refinements (activation tab, inspector shadow, single/double-click model, depth-style tab shadows, font sizes, hover glows, file node risk colors, search bar margin).
+
+EOF
+
+
+---
+date: 2026-03-13T12:40:18-0400
+hash: rBqhKK8Fru7ebDM7IlI6NJSumULAxs7mnzqoym4gs/s=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 00bf0e74865c677c4173471d8ca1da3dcd9a50b5
+---
+
+Phase UI-6: UI refinements implemented on branch phase-ui-6.
+
+Note: PR #24 (phase-ui-6-css) was merged into fix-inspector-deeplinks instead of main. Resolved by merging commit a7bc124 into phase-ui-6 branch — no conflicts since the two branch tips had identical file trees.
+
+Changes:
+- useAppNav: select() uses replaceState (selection is in-memory, no history entry); selectAndZoom still pushes history for zoom transitions
+- layered.ts: computeLayout/layoutFiles accept optional availableWidth; z=3 COLS constrained to fit; scoreFor handles file nodes at z=3 using risk_score
+- MapCanvas: isFilesLevel prop; onNodeDoubleClick prop; file nodes at z=3 coloured by risk_score; hover glow via stroke color change
+- App.tsx: inspectorOpen + layoutAvailableWidth state; single-click selects (no zoom), double-click navigates; activation tab at right edge (z>=2); inspector shows on inspectorOpen; background click closes inspector; layout uses availableWidth when inspector open at navigation time
+- Inspector: selectedId: string|null; empty state; FileRow gets gh/vs links + larger touch target (py-3) + text-[1.25rem]; panel left shadow; NavItem/FileRow hover glows; SectionHeader text-[1.25rem]
+- StatusBar: horizontal layout with fixed-width tabs bottom-left, info row right; shadow-based depth; text-[1.25rem] tabs, text-[1rem] info
+- SearchBar: top-8 (32px, ~2em)
+- index.css: added --shadow-glow-neutral/high/med tokens
+
+Coderabbit findings: both false positives (Escape useEffect present, files always File[]).
+All gates: ESLint clean, Vitest 64/64, Go tests all pass, vite build success.
+Branch: phase-ui-6
+
+EOF
+
+
+---
+date: 2026-03-13T13:14:07-0400
+hash: ZgMLM1VeW7zvPekbk9qNPhjhCv2CCQSJD9p1G0UrWOg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 15b046ff684f594a067e9cf76f10a12cc274b27c
+---
+
+UI polish: tab rounding, canvas-tab merge, hover glows, node depth shadows. Branch: phase-ui-6
+
+StatusBar: removed border-t from wrapper; active tab border-t-0 + rounded-[4px] so selected tab appears seamlessly part of canvas; all tabs fully rounded.
+
+MapCanvas: hover now uses feDropShadow blue-white glow filter (hoverGlowId) instead of stroke color change; all nodes get subtle depth drop-shadow filter (shadowId) as default; risk glow filter (glowId) still applied for high-severity nodes; hover takes priority over all other filters.
+
+EOF
+
+
+---
+date: 2026-03-13T14:28:41-0400
+hash: ifyyVzFKJdS5/5O4YJFK8BMONs0y1I1htE8bc2cUiOo=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2d40a08a676e055d7d31c611cf42f249fb4cd335
+---
+
+send 'er: all gates passed. Simplify fixes applied before push. Branch: phase-ui-6
+
+Simplify fixes:
+- App.tsx: extracted duplicate newWidth calc before conditional in handleNodeDoubleClick; wrapped tooltipModuleId in useMemo
+- Inspector.tsx: moved SEVERITY_ORDER object to module scope (was recreated in useMemo each run); memoized isWindows path scan with useMemo
+
+Gates: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race all pass, go build success, Vitest 64/64, ESLint clean.
+
+EOF
+

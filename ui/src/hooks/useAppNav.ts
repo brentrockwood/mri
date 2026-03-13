@@ -66,7 +66,7 @@ export function useAppNav(): AppNavState {
   const select = useCallback((id: string | null) => {
     setNav((prev) => {
       const next = { zoomLevel: prev.zoomLevel, selectedId: id }
-      history.pushState(next, '', buildHash(prev.zoomLevel, id))
+      history.replaceState(next, '', buildHash(prev.zoomLevel, id))
       return next
     })
   }, [])

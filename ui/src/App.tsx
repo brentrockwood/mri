@@ -21,11 +21,12 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('')
   // ID of a node to centre on after the next layout update
   const [pendingCenterId, setPendingCenterId] = useState<string | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [layoutAvailableWidth, setLayoutAvailableWidth] = useState<number | undefined>(undefined)
 
   const layout = useMemo(
-    () =>
-      computeLayout(analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId),
-    [analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId],
+    () => computeLayout(analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId, layoutAvailableWidth),
+    [analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId, layoutAvailableWidth],
   )
 
   const zoom = useZoom(layout.canvasWidth, layout.canvasHeight)
@@ -46,20 +47,29 @@ export function App() {
     setPendingCenterId(id)
   }, [selectAndZoom])
 
-  // Clicking a node: single history push combining selection + zoom change.
+  // Single-click select only (no zoom).
   function handleNodeClick(id: string) {
     setSearchQuery('')
-    if (zoomLevel === 2) {
-      // Module node at modules level → drill into files view.
-      navigateTo(id, 3)
-    } else if (zoomLevel === 1) {
-      // Arch node → go to modules level (no selection needed at arch level).
-      selectAndZoom(null, 2)
-    } else {
-      // Files level → select the file (stays at z=3).
+    if (zoomLevel >= 2) {
       select(id)
+      setInspectorOpen(true)
     }
+    // At z=1, single click is no-op for inspector/selection
   }
+
+  const handleNodeDoubleClick = useCallback((id: string) => {
+    setSearchQuery('')
+    const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
+    if (zoomLevel === 1) {
+      setLayoutAvailableWidth(newWidth)
+      selectAndZoom(null, 2)
+    } else if (zoomLevel === 2) {
+      setLayoutAvailableWidth(newWidth)
+      navigateTo(id, 3)
+      setInspectorOpen(true)
+    }
+    // z=3: double-click is same as single-click (already handled by onClick)
+  }, [zoomLevel, inspectorOpen, selectAndZoom, navigateTo])
 
   function handleSearchSelect(hit: SearchHit) {
     setSearchQuery('')
@@ -81,14 +91,16 @@ export function App() {
    */
   function handleLevelChange(newLevel: ZoomLevel) {
     if (newLevel === zoomLevel) return
+    const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
+    setLayoutAvailableWidth(newWidth)
     if (newLevel === 1) {
+      setInspectorOpen(false)
       selectAndZoom(null, 1)
     } else if (newLevel === 2) {
       const selectedFile = analysis.files.find((f) => f.path === selectedId)
       const newId = selectedFile ? selectedFile.module : selectedId
       selectAndZoom(newId, 2)
     } else {
-      // z=3: keep existing selection
       selectAndZoom(selectedId, 3)
     }
   }
@@ -107,17 +119,21 @@ export function App() {
 
   const handleBackgroundClick = useCallback(() => {
     select(null)
+    setInspectorOpen(false)
     setSearchQuery('')
   }, [select])
 
-  // Show tooltip only for Level-2 module nodes while no inspector is open
-  const tooltipModuleId =
-    hoveredId !== null &&
-    zoomLevel === 2 &&
-    selectedId === null &&
-    analysis.modules.some((m) => m.id === hoveredId)
-      ? hoveredId
-      : null
+  // Show tooltip only for Level-2 module nodes while inspector is not open
+  const tooltipModuleId = useMemo(
+    () =>
+      hoveredId !== null &&
+      zoomLevel === 2 &&
+      !inspectorOpen &&
+      analysis.modules.some((m) => m.id === hoveredId)
+        ? hoveredId
+        : null,
+    [hoveredId, zoomLevel, inspectorOpen, analysis.modules],
+  )
 
   const matchingIds = useMemo(
     () => matchingModuleIds(searchQuery, analysis),
@@ -125,26 +141,19 @@ export function App() {
   )
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100vw',
-        height: '100vh',
-        background: '#0f172a',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+    <div className="flex flex-col w-screen h-screen bg-canvas overflow-hidden">
+      <div className="flex-1 min-h-0 relative">
         <MapCanvas
           layout={layout}
           analysis={analysis}
           isArchLevel={zoomLevel === 1}
+          isFilesLevel={zoomLevel === 3}
           viewBox={zoom.viewBox}
           selectedId={selectedId}
           matchingIds={matchingIds}
           svgRef={zoom.svgRef}
           onNodeClick={handleNodeClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
           onNodeHover={handleNodeHover}
           onBackgroundClick={handleBackgroundClick}
           onMouseDown={zoom.handleMouseDown}
@@ -159,13 +168,24 @@ export function App() {
           onSelect={handleSearchSelect}
         />
 
-        {selectedId !== null && (
+        {inspectorOpen && (
           <Inspector
             selectedId={selectedId}
             analysis={analysis}
-            onClose={() => select(null)}
+            onClose={() => { select(null); setInspectorOpen(false) }}
             onNavigate={navigateTo}
           />
+        )}
+
+        {zoomLevel >= 2 && (
+          <button
+            onClick={() => setInspectorOpen(!inspectorOpen)}
+            style={{ right: inspectorOpen ? 360 : 0 }}
+            className="absolute top-16 z-[99] bg-panel border border-border-subtle text-text-muted cursor-pointer px-1 py-3 rounded-l-[4px] text-sm font-mono hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-all duration-150 shadow-[var(--shadow-panel)]"
+            aria-label={inspectorOpen ? 'Close inspector' : 'Open inspector'}
+          >
+            {inspectorOpen ? '‹' : '›'}
+          </button>
         )}
 
         {tooltipModuleId !== null && (

@@ -189,3 +189,46 @@ gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -ra
 phase-ui-4-search
 
 ---
+
+## [2026-03-13T11:51:56-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `8eee479` | **sha256**: `a3f43f57a5f5`
+
+Phase UI-6-css: Tailwind v4 migration
+
+Completed Phase UI-6-css per project.md spec. Installed @tailwindcss/vite, established design token system in src/index.css (@theme), and migrated all inline React style props to Tailwind utility classes across all 5 component files and App.tsx. Introduced lib/cn.ts and moved severityColorClass/complexityBand to lib/risk.ts. Fixed 4 coderabbit findings (border token naming, URL slug path handling, a11y Space key). All gates passed: gosec, goimports, go vet, golangci-lint, go test -race, eslint, vitest 64/64, vite build.
+
+---
+
+## [2026-03-13T12:22:45-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `f7863c3` | **sha256**: `a4fb8c43947f`
+
+Check that main is up to date with the latest PR#24. Then proceed with Phase UI-6.
+
+---
+
+## [2026-03-13T12:40:37-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `21f7401` | **sha256**: `44109ed54edb`
+
+Phase UI-6 complete. Merged phase-ui-6-css Tailwind work (PR #24 had wrong base branch). Implemented: activation tab, single/double-click interaction model, inspector empty state + FileRow deep links, status bar redesign, file node risk colouring, hover glows, 2em search bar margin. All gates pass.
+
+---
+
+## [2026-03-13T14:28:45-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `2d40a08` | **sha256**: `687a08127f2a`
+
+send 'er: Phase UI-6 complete. Simplify: extracted newWidth, memoized tooltipModuleId + isWindows, module-scoped SEVERITY_ORDER. All gates: gosec 0, goimports clean, go vet clean, golangci-lint 0, go test -race all pass, go build, Vitest 64/64, ESLint clean.
+
+---
+
+## [2026-03-13T14:38:04-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f54b0dd` | **sha256**: `4cb847bf40ca`
+
+Fixed two bugs raised post-PR-#25:
+
+1. Double-click text selection (minor): Added e.preventDefault() to GraphNode onDoubleClick handler in MapCanvas.tsx to suppress browser's native text-selection behavior on double-click.
+
+2. TypeScript module granularity (major): moduleID() now uses strings.LastIndex (full directory path) for typescript and javascript, matching Go's package-level granularity. Added relative import resolution in the ingestion loop: ../lib/risk from ui/src/components/Inspector.tsx resolves to module ui/src/lib so cross-directory TS dependencies are recorded. Added TestIngest_TypeScriptPackageLevelModules integration test and updated TestModuleID.
+
+All gates pass: gosec 0, goimports clean, go vet clean, go test -race all pass, go build, Vitest 64/64, ESLint clean.
+
+---

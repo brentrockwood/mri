@@ -1,5 +1,6 @@
 import type { Analysis } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
+import { cn } from '../lib/cn'
 
 const LEVEL_LABELS: Record<ZoomLevel, string> = {
   1: 'Architecture',
@@ -28,69 +29,46 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div
-      style={{
-        background: '#1e293b',
-        borderTop: '1px solid #334155',
-        flexShrink: 0,
-      }}
-    >
-      {/* Tab row */}
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+    <div className="bg-panel shrink-0 flex items-end gap-4 px-4 pb-3">
+      {/* Tab strip - fixed-width tabs, bottom-left */}
+      <div className="flex items-end gap-1 shrink-0">
         {LEVELS.map((l) => (
           <button
             key={l}
             onClick={() => onLevelChange(l)}
-            style={{
-              flex: 1,
-              padding: '10px 4px 8px',
-              border: 'none',
-              borderTop: l === level ? '2px solid #3b82f6' : '2px solid transparent',
-              background: l === level ? '#0f172a' : 'transparent',
-              color: l === level ? '#f8fafc' : '#64748b',
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'color 0.15s, background 0.15s',
-            }}
+            className={cn(
+              'px-6 py-2 font-mono text-[1.25rem] cursor-pointer border border-border-subtle rounded-[4px] transition-colors duration-150',
+              l === level
+                ? 'bg-canvas text-text-primary shadow-[var(--shadow-tab-active)] border-t-0'
+                : 'bg-panel text-text-muted shadow-[var(--shadow-tab-inactive)] hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)]',
+            )}
           >
             {LEVEL_LABELS[l]}
           </button>
         ))}
       </div>
 
-      {/* Info row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '4px 16px 14px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          color: '#475569',
-          flexWrap: 'wrap',
-        }}
-      >
+      {/* Info row - to the right of tabs */}
+      <div className="flex-1 flex items-center gap-[10px] pb-1 text-[1rem] font-mono text-text-dim flex-wrap">
         {/* Breadcrumb */}
         <span>
           {crumbs.map((crumb, i) => (
             <span key={`${crumb}-${i}`}>
-              {i > 0 && <span style={{ margin: '0 4px', color: '#334155' }}>›</span>}
-              <span style={{ color: i === crumbs.length - 1 ? '#cbd5e1' : '#475569' }}>
+              {i > 0 && <span className="mx-1 text-border-subtle">›</span>}
+              <span className={i === crumbs.length - 1 ? 'text-text-secondary' : 'text-text-dim'}>
                 {crumb}
               </span>
             </span>
           ))}
         </span>
 
-        <span style={{ color: '#334155' }}>|</span>
+        <span className="text-border-subtle">|</span>
 
         {/* Summary counts */}
         <span>{repo.module_count} modules</span>
         <span>{repo.file_count} files</span>
-        {highCount > 0 && <span style={{ color: '#f87171' }}>{highCount} high</span>}
-        {medCount > 0 && <span style={{ color: '#facc15' }}>{medCount} med</span>}
+        {highCount > 0 && <span className="text-risk-high">{highCount} high</span>}
+        {medCount > 0 && <span className="text-risk-med">{medCount} med</span>}
       </div>
     </div>
   )
