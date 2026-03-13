@@ -3,6 +3,7 @@ package depaudit
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -103,7 +104,7 @@ func TestParseNPMAuditJSON_V1(t *testing.T) {
 		t.Errorf("severity = %q, want \"high\"", r.Severity)
 	}
 	if r.Title != "Prototype Pollution in lodash" {
-		t.Errorf("title = %q", r.Title)
+		t.Errorf("title = %q, want \"Prototype Pollution in lodash\"", r.Title)
 	}
 	if !strings.Contains(r.Description, "https://npmjs.com/advisories/755") {
 		t.Errorf("description missing URL: %q", r.Description)
@@ -247,8 +248,8 @@ func TestAuditJS_NoProjectRoots(t *testing.T) {
 // --- Audit: skipped_passes reported when govulncheck absent ---
 
 func TestAudit_GovulncheckSkippedWhenGoSumPresent(t *testing.T) {
-	if _, err := os.Stat("/usr/local/bin/govulncheck"); err == nil {
-		t.Skip("govulncheck is present; skipped-pass behaviour not testable")
+	if _, err := exec.LookPath("govulncheck"); err == nil {
+		t.Skip("govulncheck is present on PATH; skipped-pass behaviour not testable")
 	}
 
 	dir := t.TempDir()

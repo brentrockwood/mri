@@ -273,10 +273,16 @@ func moduleID(relPath, language string, jsProjectRoots []string) string {
 		return slashPath[:idx]
 	}
 	if language == "typescript" || language == "javascript" {
+		// Return the longest matching project root so that nested workspaces
+		// (e.g. "ui/packages/core" inside "ui") resolve to the most specific root.
+		best := ""
 		for _, proj := range jsProjectRoots {
-			if strings.HasPrefix(slashPath, proj+"/") {
-				return proj
+			if strings.HasPrefix(slashPath, proj+"/") && len(proj) > len(best) {
+				best = proj
 			}
+		}
+		if best != "" {
+			return best
 		}
 		// Fallback: directory-level granularity.
 		idx := strings.LastIndex(slashPath, "/")

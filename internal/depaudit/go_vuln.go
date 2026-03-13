@@ -31,8 +31,14 @@ func auditGo(ctx context.Context, root string) ([]schema.Risk, []string) {
 	cmd.Dir = root
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	// govulncheck exits 3 when vulnerabilities are found; ignore exit code.
+	// govulncheck exits 3 when vulnerabilities are found; we cannot use the
+	// exit code alone to distinguish "found vulns" from "tool error". However,
+	// a cancelled context means the output is likely incomplete, so we bail
+	// out early in that case.
 	_ = cmd.Run()
+	if ctx.Err() != nil {
+		return nil, nil
+	}
 
 	if out.Len() == 0 {
 		return nil, nil
@@ -120,6 +126,11 @@ func parseGovulncheckJSON(data []byte) []schema.Risk {
 			TargetType:  "file",
 			TargetID:    goModFile,
 		})
+	}
+	if err := scanner.Err(); err != nil {
+		// Log the scanner error but return whatever findings were successfully
+		// parsed — this pass is non-fatal.
+		fmt.Fprintf(os.Stderr, "depaudit govulncheck: scanner error: %v\n", err)
 	}
 	return risks
 }

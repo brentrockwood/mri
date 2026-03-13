@@ -21,6 +21,7 @@ function nodeLabel(id: string): string {
 /** Complexity score for a node ID (returns 0 for Level 1 virtual nodes). */
 function scoreFor(nodeId: string, modules: Module[], isArchLevel: boolean, files: File[], isFilesLevel: boolean): number {
   if (isFilesLevel) {
+    if (!Array.isArray(files)) return 0
     return files.find((f) => f.path === nodeId)?.risk_score ?? 0
   }
   if (!isArchLevel) {

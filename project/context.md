@@ -1122,3 +1122,29 @@ All 70 tests pass (was 64). golangci-lint clean. No UI changes this phase.
 
 EOF
 
+
+---
+date: 2026-03-13T19:08:55-0400
+hash: uLLaq/ZwkdYeGiBOgjzgN8Jk5bJOc6ftiILAcahuPuI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: e4d1399117e109d1719bd5cd094b8e370871110b
+---
+
+CodeRabbit review findings addressed (7 of 9 fixed; 2 require human authorization for project.md). Branch: phase-8-dep-audit.
+
+Fixed:
+- depaudit_test.go: improved error message to include expected value; replaced brittle os.Stat govulncheck path check with exec.LookPath
+- go_vuln.go: bail out early when ctx is cancelled after cmd.Run() to avoid parsing incomplete output; check scanner.Err() after scan loop and log non-nil errors to stderr
+- ingestion.go moduleID: changed first-match to longest-match for nested JS project roots (e.g. "ui/packages/core" correctly wins over "ui")
+- App.tsx handleNodeDoubleClick: z=2→z=3 now uses window.innerWidth-360 (inspector will open) instead of stale inspectorOpen state
+- MapCanvas.tsx scoreFor: guard Array.isArray(files) before .find() at files level
+
+Deferred (project.md is write-locked, requires human authorization):
+- Typo "node-modules" → "node_modules" in Phase 7 description
+- Phase 10 MUI migration section: suggestion to add evaluation checklist vs Tailwind before committing to MUI
+
+All 70 Go tests pass, golangci-lint clean, TypeScript clean.
+
+EOF
+
