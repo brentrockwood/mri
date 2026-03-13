@@ -1044,3 +1044,20 @@ Branch: phase-ui-6
 
 EOF
 
+
+---
+date: 2026-03-13T16:53:41-0400
+hash: QvCDiQgHlBow/oVqioCP1KakjD4KyPRulso8dYwwDk8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: c5284c2fa5d45ea85f9d95d746ba327e606772fe
+---
+
+Next steps discussed before architectural review. Branch: phase-ui-6.
+
+Proposed: npm-audit pass — a new analysis pass (not ingestion) that shells out to `npm audit --json` for each JS project root found by findJSProjectRoots(). Maps npm severities (critical/high → high, moderate → medium, low/info → low) to schema.Risk entries. Module = JS project root module (e.g. "ui"), file = package.json path. Non-fatal if npm unavailable — adds "npm-audit" to skipped_passes. No flag needed; runs by default for any repo with a package.json. Govulncheck for Go deps is a natural companion pass.
+
+User is seeking architectural review from other models before committing to next steps. PR incoming on phase-ui-6.
+
+EOF
+
