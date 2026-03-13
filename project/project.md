@@ -319,6 +319,38 @@ subtree belong to one logical unit.
 
 ---
 
+### Phase 8 - Dep-Audit — basic dependency vulnerability audit
+
+Surface known dependency vulnerabilities in `analysis.json` (UI display deferred to a later phase).
+
+**JS/TS:** Read `dependencies` and `devDependencies` from each `package.json` found by `findJSProjectRoots()`. Supplement with `npm audit --json` findings where npm is available. Map npm severities: `critical`/`high` → `high`, `moderate` → `medium`, `low`/`info` → `low`. Emit as `schema.Risk` entries with `type: "dep-vuln"`, `module` = project root module (e.g. `ui`), `file` = `package.json` path. Non-fatal if npm unavailable — add `"npm-audit"` to `skipped_passes`.
+
+**Go:** Use `govulncheck` against `go.sum`. Map its findings to `schema.Risk` similarly. Non-fatal if govulncheck unavailable. Human note: Go implementation left to AI.
+
+**Output:** `file_deps` and vulnerability risks appear in `analysis.json` only; no UI changes in this phase.
+
+---
+
+### Phase 9 - Static-Analysis Audit — broader tooling survey
+
+Before committing to further AI analysis investment, audit what existing static analysis tools can provide faster and cheaper. Think broadly: linters, SAST tools, complexity analyzers, license scanners, dead-code detectors. Identify the highest-signal tools per language already present in the ecosystem and evaluate integrating their output as additional risk passes.
+
+---
+
+### Phase 10 - Material UI migration
+
+*(Supersedes the Future note below.)*
+
+Port the surrounding shell UI components to Material UI. See **Future** section below for detail.
+
+---
+
+### Phase 11 - Inspector richness
+
+Deepen the Inspector panel. Specific scope to be defined after the architectural review and Phase 9 findings.
+
+---
+
 ## Future
 
 - **Material UI component library**: replace the hand-rolled Tailwind UI components (Inspector, SearchBar, StatusBar, Tooltip) with Material UI equivalents. MUI's `Drawer`, `TextField`, `Chip`, `Tooltip`, `Table`, and theming system would clean up a large amount of rough edge-case styling and improve accessibility out of the box. Requires defining a dark-mode MUI theme that matches the existing design token palette. The SVG graph canvas (`MapCanvas`) would remain unchanged — MUI is for the surrounding shell only.

@@ -1061,3 +1061,23 @@ User is seeking architectural review from other models before committing to next
 
 EOF
 
+
+---
+date: 2026-03-13T18:33:58-0400
+hash: VupfjlE4yiWUx9CcMuepHb+pNZjFy2gu/aJZwxJnzAk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: ad3c3e99218bc9cb0cce0eb8aad52ba299ea3fd8
+---
+
+Recorded roadmap in project.md (Phases 8–11). Branch: phase-ui-6.
+
+Phase 8 (Dep-Audit): npm audit + govulncheck → schema.Risk entries in analysis.json; no UI changes yet.
+Phase 9 (Static-Analysis Audit): survey existing static analysis tools before further AI investment.
+Phase 10 (MUI migration): port Inspector/SearchBar/StatusBar/Tooltip to Material UI.
+Phase 11 (Inspector richness): deepen Inspector panel; scope TBD after review.
+
+PR #26 open for architectural review before Phase 8 begins.
+
+EOF
+
