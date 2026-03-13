@@ -280,6 +280,12 @@ Builds on the Tailwind foundation from UI-6-css.
 - **Background / whitespace click**: deselects at every zoom level (closes inspector, clears `selectedId`). Consistent behaviour across z=1, z=2, z=3.
 - **History model**: only zoom level transitions push to `history`. Selection changes within a level are in-memory state only. The browser back button navigates level transitions; it does not undo individual node selections.
 
+**Hover glows**
+- All navigable items (canvas nodes, inspector file rows, import/imported-by nav items, "in module" link, activation tab) show a subtle glow on hover. Use a consistent `hover:` Tailwind variant; the glow colour should match the item's risk/severity colour where applicable, or default to a soft blue-white for neutral items.
+
+**Search bar**
+- Add `2em` top margin to the search bar so it doesn't sit flush against the top of the viewport.
+
 **Future notes (not in this phase)**
 - *Command palette*: a floating non-movable toolbar (two icon buttons — Home to z=1, Reflow to re-run layout for current viewport) in the style of CAD application viewport controls.
 - *Selection vs. navigation*: the single/double-click model introduced here is the foundation; future phases may extend it (e.g. multi-select, range highlight).
