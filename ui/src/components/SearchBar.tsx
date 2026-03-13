@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Analysis } from '../types/analysis'
 import { hitKey, search } from '../lib/search'
 import type { SearchHit } from '../lib/search'
+import { cn } from '../lib/cn'
 
 const KIND_LABEL: Record<SearchHit['kind'], string> = {
   module: 'Module',
@@ -90,12 +91,12 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search modules, files, findings…"
-        className={[
+        className={cn(
           'w-full py-[7px] px-3 bg-panel border border-border-strong',
           showDropdown ? 'rounded-t-md' : 'rounded-md',
           'text-text-secondary text-xs font-mono outline-none',
           'shadow-[0_4px_16px_rgba(0,0,0,0.5)]',
-        ].join(' ')}
+        )}
       />
 
       {/* Dropdown */}
@@ -105,11 +106,11 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
             <div
               key={hitKey(hit)}
               onMouseDown={() => handleSelect(hit)}
-              className={[
+              className={cn(
                 'flex items-baseline gap-2 py-[7px] px-3 cursor-pointer',
                 i === activeIndex ? 'bg-canvas' : 'bg-transparent',
-                i > 0 ? 'border-t border-canvas' : '',
-              ].join(' ')}
+                i > 0 && 'border-t border-canvas',
+              )}
             >
               <span
                 className="text-[9px] font-bold uppercase tracking-[0.06em] shrink-0 w-12"

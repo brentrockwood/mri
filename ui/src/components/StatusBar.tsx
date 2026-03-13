@@ -1,5 +1,6 @@
 import type { Analysis } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
+import { cn } from '../lib/cn'
 
 const LEVEL_LABELS: Record<ZoomLevel, string> = {
   1: 'Architecture',
@@ -35,12 +36,12 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
           <button
             key={l}
             onClick={() => onLevelChange(l)}
-            className={[
+            className={cn(
               'flex-1 px-1 pt-[10px] pb-2 border-t-2 font-mono text-xs cursor-pointer transition-colors duration-150',
               l === level
                 ? 'border-blue-500 bg-canvas text-text-primary'
                 : 'border-transparent bg-transparent text-text-muted',
-            ].join(' ')}
+            )}
           >
             {LEVEL_LABELS[l]}
           </button>

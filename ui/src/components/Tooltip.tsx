@@ -1,10 +1,5 @@
 import type { Analysis } from '../types/analysis'
-
-function complexityBand(score: number): string {
-  if (score >= 0.7) return 'High'
-  if (score >= 0.4) return 'Moderate'
-  return 'Low'
-}
+import { complexityBand } from '../lib/risk'
 
 export interface TooltipProps {
   moduleId: string

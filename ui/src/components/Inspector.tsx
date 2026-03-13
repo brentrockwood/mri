@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Analysis, File, Risk } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
-import { complexityColor, riskSeverity } from '../lib/risk'
+import { complexityColor, riskSeverity, severityColorClass } from '../lib/risk'
 import { copyToClipboard, detectWindowsPaths, githubUrl, vscodeUrl } from '../lib/deeplinks'
+import { cn } from '../lib/cn'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function severityColorClass(severity: string): string {
-  if (severity === 'high') return 'text-risk-high'
-  if (severity === 'medium') return 'text-risk-med'
-  return 'text-risk-low'
-}
 
 function confidencePct(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
@@ -35,10 +30,10 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleClick}
       title="Copy path"
-      className={[
+      className={cn(
         'px-1.5 py-px text-[10px] font-mono border border-border-strong rounded-[3px] cursor-pointer shrink-0',
         copied ? 'bg-green-800 text-green-300' : 'bg-panel text-text-muted',
-      ].join(' ')}
+      )}
     >
       {copied ? 'copied' : 'copy'}
     </button>
