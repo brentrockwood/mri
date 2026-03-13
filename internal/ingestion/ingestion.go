@@ -110,8 +110,15 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		moduleSet[m.ID] = true
 	}
 
-	depSet := map[string]bool{} // "from→to" dedup key
+	fileSet := map[string]bool{}
+	for _, fi := range files {
+		fileSet[fi.Path] = true
+	}
+
+	depSet := map[string]bool{}     // "from→to" dedup key for module deps
+	fileDepSet := map[string]bool{} // dedup key for file deps
 	var dependencies []schema.Dependency
+	var fileDeps []schema.FileDep
 	var schemaFiles []schema.File
 
 	for _, fi := range files {
@@ -140,6 +147,20 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 				if moduleSet[candidate] {
 					toMod = candidate
 				}
+
+				// Also attempt file-level resolution (try with and without extension).
+				base := path.Clean(path.Join(fileDir, imp))
+				for _, ext := range []string{"", ".ts", ".tsx", ".js", ".jsx"} {
+					candidateFile := base + ext
+					if fileSet[candidateFile] && candidateFile != fi.Path {
+						key := fi.Path + "→" + candidateFile
+						if !fileDepSet[key] {
+							fileDepSet[key] = true
+							fileDeps = append(fileDeps, schema.FileDep{From: fi.Path, To: candidateFile})
+						}
+						break
+					}
+				}
 			} else {
 				toMod = importToModule(imp, moduleSet)
 			}
@@ -166,6 +187,12 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 			return dependencies[i].From < dependencies[j].From
 		}
 		return dependencies[i].To < dependencies[j].To
+	})
+	sort.Slice(fileDeps, func(i, j int) bool {
+		if fileDeps[i].From != fileDeps[j].From {
+			return fileDeps[i].From < fileDeps[j].From
+		}
+		return fileDeps[i].To < fileDeps[j].To
 	})
 
 	repoName := filepath.Base(root)
@@ -208,6 +235,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		Dependencies: dependencies,
 		Risks:        []schema.Risk{},
 		Files:        schemaFiles,
+		FileDeps:     fileDeps,
 	}
 
 	return &Result{

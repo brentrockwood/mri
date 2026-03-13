@@ -3,7 +3,7 @@ import { hitKey, matchingModuleIds, search } from './search'
 import type { Analysis } from '../types/analysis'
 
 const analysis: Analysis = {
-  meta: { schema_version: '1.2', cli_version: '0.1.0', analysis_duration_ms: 0 },
+  meta: { schema_version: '1.3', cli_version: '0.1.0', analysis_duration_ms: 0 },
   repo: { name: 'test-repo', languages: ['Go'], file_count: 4, module_count: 2, analysis_time: '' },
   modules: [
     {

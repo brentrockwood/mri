@@ -1025,3 +1025,22 @@ Branch: phase-ui-6
 
 EOF
 
+
+---
+date: 2026-03-13T16:22:51-0400
+hash: 46yi/2UdpXgohyN6/fRdGsTMP484gSInQQgkBzTsZmg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d08bad232daedf0146f516eec45c0b6152ff075f
+---
+
+Phase File-Deps: Added file-to-file dependency edges at the files level (zoom 3).
+
+Schema bumped to 1.3. Added FileDep struct (Go) / FileDep interface (TS) and file_deps field to Analysis. Ingestion builds fileSet then resolves relative JS/TS imports to specific file paths (trying "", .ts, .tsx, .js, .jsx extensions). Layout layoutFiles() now accepts fileDeps, filters to intra-module pairs, builds edges via aggregateEdges. computeLayout signature updated; App.tsx passes analysis.file_deps.
+
+Result on mri repo: 44 file-level deps detected (all ui/**). Edges now visible at zoom 3. All gates clean: gosec 0, goimports clean, go vet, go build, go test -race pass, 64 Vitest pass, ESLint clean.
+
+Branch: phase-ui-6
+
+EOF
+

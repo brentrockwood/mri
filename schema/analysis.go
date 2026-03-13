@@ -4,7 +4,7 @@ package schema
 import "time"
 
 // SchemaVersion is the current version of the analysis.json schema.
-const SchemaVersion = "1.2"
+const SchemaVersion = "1.3"
 
 // CLIVersion is the current version of the CLI.
 const CLIVersion = "0.1.0"
@@ -17,6 +17,7 @@ type Analysis struct {
 	Dependencies []Dependency `json:"dependencies"`
 	Risks        []Risk       `json:"risks"`
 	Files        []File       `json:"files"`
+	FileDeps     []FileDep    `json:"file_deps,omitempty"`
 	Subsystems   []Subsystem  `json:"subsystems,omitempty"`
 }
 
@@ -65,6 +66,12 @@ type Dependency struct {
 	From string `json:"from"`
 	To   string `json:"to"`
 	Type string `json:"type"`
+}
+
+// FileDep represents a directed import relationship between individual files.
+type FileDep struct {
+	From string `json:"from"`
+	To   string `json:"to"`
 }
 
 // Risk represents a single finding from an analysis pass.

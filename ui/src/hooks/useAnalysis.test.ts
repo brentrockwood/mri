@@ -18,7 +18,7 @@ describe('loadAnalysis', () => {
     expect(analysis.repo.module_count).toBe(2)
     expect(analysis.modules).toHaveLength(2)
     expect(analysis.modules.map((m) => m.id)).toContain('internal/analysis')
-    expect(analysis.meta.schema_version).toBe('1.2')
+    expect(analysis.meta.schema_version).toBe('1.3')
     expect(analysis.meta.root_path).toBe('/home/user/project')
   })
 
