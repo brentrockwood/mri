@@ -1,48 +1,176 @@
-# Codebase MRI — Build Specification
+# Codebase MRI — UI Build Specification
 
 ## What This Is
 
-A CLI tool written in Go that analyzes a software repository and produces a structured diagnostic report. The CLI is the engine. A UI layer will consume its output later.
+A self-contained interactive visualization of the `analysis.json` artifact produced by the `repo-mri` CLI. The UI is a single HTML file with all analysis data inlined at generation time — open it directly in a browser with no server required.
 
-One command. One output directory. One canonical JSON artifact.
+The CLI remains the analysis engine. The UI is the navigation interface.
 
 ---
 
-## Command Interface
+## Target Platform
 
-```bash
-repo-mri analyze https://github.com/org/repo
-repo-mri analyze .
-```
+**Minimum:** Raspberry Pi 5 (8 GB RAM, SSD) running current Chrome on ARM64 Linux.
 
-Output:
+**Also tested:** Windows (current Chrome, x86-64).
 
-```
-.repo-mri/
-  analysis.json
-  report.md
-```
+Chrome is the only supported browser. No polyfills for other browsers are required. SVG rendering is validated as sufficient for this hardware profile; the Canvas upgrade path exists for larger repositories, not for performance on the minimum target.
+
+---
+
+## Delivery Model
+
+The CLI writes `.repo-mri/report.html` as the sole UI output — a single, fully self-contained file with all JS, CSS, and analysis data inlined. No server is required. The user opens `report.html` directly in a browser from disk. `analysis.json` continues to be written separately as the canonical machine-readable artifact but is not required by the HTML file at runtime.
+
+The UI project lives in a `ui/` subdirectory of the `mri` repository and is built separately from the Go CLI. The CLI's `report` package is responsible for copying the built `report.html` into `.repo-mri/` as part of Phase 6 report generation.
+
+---
+
+## Stack Decisions
+
+| Concern | Decision |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Bundler | Vite + `vite-plugin-singlefile` |
+| Graph layout | D3 (layout math only — no DOM rendering via D3) |
+| Graph rendering | SVG for MVP; Canvas upgrade path documented below |
+| Styling | Tailwind CSS (utility classes only, no custom CSS framework) |
+| Testing | Vitest + React Testing Library |
+| Linting | ESLint + `@typescript-eslint` |
+| Formatting | Prettier |
+
+**Canvas upgrade trigger:** migrate SVG rendering to Canvas if node count exceeds 500 or if measurable jank appears during pan/zoom on target hardware. Document the trigger in context before beginning the migration.
+
+**Vite singlefile:** `vite build` with `vite-plugin-singlefile` produces a single `report.html` with all JS and CSS inlined. No external CDN dependencies. The file must be fully functional with no network access.
 
 ---
 
 ## Project Structure
 
 ```
-repo-mri/
-  cmd/
-    repo-mri/
-      main.go
-  internal/
-    ingestion/
-    analysis/
-    providers/
-      anthropic.go
-      openai.go
-    aggregation/
-    report/
-  schema/
-    analysis.go
+ui/
+  src/
+    components/
+      MapCanvas.tsx       # SVG graph renderer
+      Inspector.tsx       # Right-click / click detail panel
+      SearchBar.tsx       # Module / file / finding search
+      StatusBar.tsx       # Zoom level, summary counts
+      Tooltip.tsx         # Hover overlay
+    layout/
+      layered.ts          # Path-hierarchy layout algorithm
+      types.ts            # Layout graph types
+    hooks/
+      useAnalysis.ts      # Load and parse analysis.json
+      useSelection.ts     # Selected node state
+      useZoom.ts          # Zoom level and pan state
+    lib/
+      deeplinks.ts        # VS Code and GitHub URL builders
+      risk.ts             # Risk scoring helpers
+    types/
+      analysis.ts         # TypeScript mirror of schema/analysis.go
+    App.tsx
+    main.tsx
+  index.html
+  vite.config.ts
+  tsconfig.json
+  package.json
+  .eslintrc.json
+  .prettierrc
 ```
+
+---
+
+## Data Model
+
+The UI consumes `analysis.json` directly. The TypeScript types in `src/types/analysis.ts` mirror `schema/analysis.go` and must be kept in sync when the CLI schema version changes.
+
+Key fields consumed by the UI:
+
+**`modules[]`** — graph nodes. `id`, `path`, `risk_score`, `complexity_score`, `file_count`, `import_count`.
+
+**`dependencies[]`** — directed edges. `from` (module id), `to` (module id), `type`.
+
+**`risks[]`** — findings. `severity`, `type`, `target_type`, `target_id`, `module`, `file`, `title`, `description`, `confidence`.
+
+**`files[]`** — per-file metrics. `path`, `module`, `lines`, `complexity`, `risk_score`.
+
+**`meta`** — `schema_version`, `cli_version`, `model_used`, `provider`, `analysis_duration_ms`.
+
+**`repo`** — `name`, `languages`, `file_count`, `module_count`.
+
+---
+
+## Layout Algorithm
+
+The MVP uses a **path-hierarchy layout**. Module IDs are slash-separated paths (e.g. `internal/analysis`). The layout algorithm derives vertical position from path depth and groups siblings horizontally. Dependency edges are drawn on top of the positioned nodes.
+
+This is simpler than a full Sugiyama layered layout and sufficient for Go repos where the directory structure maps closely to the dependency hierarchy.
+
+**Upgrade path:** a full layered DAG layout (topological sort → layer assignment → barycentric crossing reduction → force relaxation within layers) is the correct long-term algorithm. Implement as a drop-in replacement for `layout/layered.ts` in a later phase when the path-hierarchy layout proves insufficient for non-Go repos or deeply tangled graphs.
+
+---
+
+## Visual Encoding
+
+| Signal | Encoding |
+|---|---|
+| Node size | Proportional to `file_count` (min/max clamped) |
+| Node color | `complexity_score` heatmap: green (low) → yellow (moderate) → red (high) |
+| Node glow | Present when module has one or more `high` severity findings |
+| Edge weight | Stroke width proportional to number of dependencies between module pair |
+| Edge direction | Arrowhead on target end |
+
+---
+
+## Zoom Levels
+
+Zoom changes the information model, not just the visual scale.
+
+| Level | Label | Nodes shown |
+|---|---|---|
+| 1 | Architecture | Top-level path segments only (e.g. `internal`, `cmd`, `schema`) |
+| 2 | Modules | All modules (e.g. `internal/analysis`, `internal/ingestion`) |
+| 3 | Files | Individual files within the selected module |
+
+Transitions between levels are triggered by scroll wheel depth or explicit zoom controls in the status bar. At Level 3, only the files of the currently selected module are shown to avoid clutter.
+
+---
+
+## Interaction Model
+
+**Hover:** tooltip showing module name, file count, LOC, complexity band, and finding counts by severity.
+
+**Click:** opens the Inspector panel with full module details — all findings for the module, dependency list, file table sorted by risk score.
+
+**Deep links in Inspector:**
+- GitHub: `https://github.com/{org}/{repo}/blob/main/{path}` (derived from `repo.name` + file path)
+- VS Code: `vscode://file/{absolute_path}:{line}` (line number from `evidence_lines[0]` where available)
+- File path copy button for all other editors
+
+**Search:** filters by module name, file name, or finding title. Matching nodes are highlighted; non-matching nodes are dimmed. Selecting a result centers the map on that node and opens the Inspector.
+
+---
+
+## Large Repository Strategy
+
+When `module_count` exceeds 50, default to Level 1 (Architecture) zoom on load. Surface the three areas of interest in the Inspector on load (no node selected):
+- Highest `risk_score` module
+- Highest `complexity_score` module
+- Highest `import_count` module (most coupled)
+
+This gives the user a starting point without rendering every node immediately.
+
+---
+
+## CLI Integration
+
+The CLI's `internal/report` package gains a second output: `report.html`. The build process embeds the compiled `report.html` template into the Go binary using `//go:embed`. At report generation time, the embedded HTML is written to `.repo-mri/report.html` with `analysis.json` path injected.
+
+**Embedding strategy:** the Vite build produces a single `report.html` with all JS and CSS inlined. At report generation time, the CLI templates `analysis.json` directly into the HTML as an inline `<script>` block — `window.__MRI_DATA__ = {...}` — so the file is fully self-contained with no runtime network requests. Chrome blocks `fetch()` on `file://` URLs; inline data is the only approach that works when the file is opened directly from disk.
+
+The `useAnalysis` hook reads from `window.__MRI_DATA__` rather than calling `fetch`. The Vite dev server injects a fixture `analysis.json` via a Vite plugin or a simple `public/__mri_data__.js` shim so development works without the Go CLI.
+
+This requires a `make ui-build` step in the CLI's Makefile that runs `vite build` in `ui/` and copies the output to `internal/report/static/report.html` before the Go binary is built. CI must run `make ui-build` before `make build`.
 
 ---
 
@@ -50,350 +178,72 @@ repo-mri/
 
 Complete each phase fully before moving to the next.
 
-### Phase 1 — Ingestion
+### Phase UI-1 — Project Skeleton
 
-- Accept a GitHub URL or local path as input
-- Clone remote repos to a temp directory
-- Walk the file tree, filter non-code files
-- Detect languages per file
-- Parse import statements to build a dependency graph
-- Collect: file count, language breakdown, directory hierarchy, import relationships
+- Scaffold `ui/` with Vite + React + TypeScript + vite-plugin-singlefile
+- Configure ESLint, Prettier, Vitest
+- Add `make ui-build` and `make ui-dev` targets to root Makefile
+- Implement `src/types/analysis.ts` mirroring current schema (v1.2)
+- Implement `useAnalysis` hook: reads from `window.__MRI_DATA__`, parses, exposes typed result; throws a typed error if the global is absent
+- Add a Vite dev plugin (or `public/mri-data-dev.js` shim) that populates `window.__MRI_DATA__` from a fixture `analysis.json` during `vite dev`
+- Stub `App.tsx`: renders repo name and module count from loaded data
+- Verify `vite build` produces a single self-contained `report.html`
+- Write one Vitest test: `useAnalysis` parses a fixture object from `window.__MRI_DATA__` correctly and throws when the global is absent
 
-### Phase 1a — Portable Binary Distribution
+### Phase UI-2 — Graph Layout and Rendering
 
-Goals: produce self-contained, portable binaries that can be used for manual testing and distribution without requiring a local Go toolchain.
+- Implement `layout/layered.ts`: path-hierarchy layout producing `{id, x, y, width, height}` per node
+- Implement `MapCanvas.tsx`: SVG renderer consuming layout output; nodes as rectangles with visual encoding (size, color, glow); edges as lines with arrowheads
+- Implement `useZoom`: pan and zoom via SVG `viewBox` manipulation; scroll wheel zoom
+- Implement zoom level switching (Architecture / Modules / Files) via status bar controls
+- Tests: layout algorithm unit tests covering path grouping, depth assignment, and sibling ordering
 
-**Checklist:**
-- [x] Add `--version` flag to CLI via cobra's `rootCmd.Version`; embed version string, git commit, and build date through `ldflags`
-- [x] Update `Makefile`:
-  - `build`: native binary → `bin/repo-mri`, `CGO_ENABLED=0`, stripped (`-ldflags "-s -w -X ..."`)
-  - `dist`: cross-compile → `dist/` for `darwin/amd64`, `darwin/arm64`, `linux/amd64`, `linux/arm64`, `windows/amd64`
-  - `install`: copy native binary to `/usr/local/bin/repo-mri`
-  - `version`: print resolved version string
-- [x] Version derived from `git describe --tags --always --dirty`; falls back to `dev` when no tags exist
-- [x] Binary names in `dist/`: `repo-mri-<os>-<arch>` (Windows: `repo-mri-windows-amd64.exe`)
-- [x] Update `README.md`: installation section covering pre-built binary usage, `make install`, and `make dist`
+### Phase UI-3 — Interaction
 
-**Constraints:**
-- `CGO_ENABLED=0` on all targets — pure Go, no libc dependency
-- No code changes beyond version wiring in `main.go`
+- Implement `Tooltip.tsx`: hover overlay with module metadata
+- Implement `Inspector.tsx`: click detail panel with findings list, dependency list, file table
+- Implement `useSelection`: selected node state, deselect on background click
+- Implement `deeplinks.ts`: GitHub URL builder, VS Code URL builder, clipboard copy
+  - VS Code deep links use Unix paths (`vscode://file//absolute/path:line`) on Linux and Windows paths (`vscode://file/C:/absolute/path:line`) on Windows; the builder must detect path format from the file paths present in `analysis.json`
+- Wire deep links into Inspector findings rows
+- Tests: deeplink URL generation for GitHub, VS Code (Unix), and VS Code (Windows) formats
 
-### Phase 2 — Static Analysis (no AI)
+### Phase UI-4 — Search
 
-Compute cheap signals before invoking any model:
+- Implement `SearchBar.tsx`: controlled input filtering modules, files, and findings by name/title
+- Highlight matching nodes; dim non-matching nodes
+- Center map on selected search result; open Inspector for that node
+- Implement breadcrumb showing current zoom level and selected module path
+- Tests: search filtering logic unit tests
 
-- Dependency graph between modules
-- File sizes and line counts
-- Cyclomatic complexity per file (best effort)
-- Most imported files
-- Deepest dependency chains
+### Phase UI-5 — CLI Integration
 
-### Phase 3 — Provider Wiring
-
-Both Anthropic and OpenAI implement this interface:
-
-```go
-type AnalysisProvider interface {
-    RunPass(ctx context.Context, pass PassType, chunks []FileChunk) ([]Finding, error)
-}
-```
-
-Provider is selected via environment variable:
-
-```bash
-REPO_MRI_ANTHROPIC_KEY
-REPO_MRI_OPENAI_KEY
-```
-
-If both are set, default to Anthropic. If neither is set, exit with a clear error message.
-
-Models:
-- Anthropic: `claude-sonnet-4-20250514`
-- OpenAI: `gpt-4o`
-
-### Phase 4 — AI Reasoning Passes
-
-Run three specialized passes. Each pass receives chunked file content and returns structured findings.
-
-**Chunking rules:**
-- Bug and security passes: file-level chunks, max 50 files per chunk
-- Architecture pass: synthesized import graph summary only, not raw file content
-
-**Passes:**
-
-| Pass | Focus |
-|---|---|
-| `architecture` | Circular dependencies, layer violations, dependency anomalies |
-| `bug` | Complexity hotspots, error handling gaps, fragile logic paths |
-| `security` | Hardcoded secrets, injection risks, auth gaps |
-
-Each pass returns an array of findings matching the risk schema below.
-
-### Phase 5 — Aggregation
-
-- Merge findings from all passes
-- Deduplicate overlapping findings (same file + same issue type)
-- Compute `risk_score` per file (0.0–1.0) from finding severity and confidence
-- Compute `risk_score` per module as average of its files
-- Rank modules by risk score descending
-
-### Phase 6 — Report Generation
-
-Write two files to `.repo-mri/`:
-
-**`analysis.json`** — canonical structured artifact (schema below)
-
-**`report.md`** — human-readable summary including:
-- Repository overview (name, languages, file count)
-- Overall health score (0–100, inverse of mean risk)
-- Top 10 riskiest modules
-- All high-severity findings grouped by module
-- Security findings section
-
----
-
-## Canonical Data Schema
-
-### Top-Level
-
-```json
-{
-  "meta": {},
-  "repo": {},
-  "modules": [],
-  "dependencies": [],
-  "risks": [],
-  "files": [],
-  "subsystems": []
-}
-```
-
-### meta
-
-```json
-{
-  "meta": {
-    "schema_version": "1.0",
-    "cli_version": "0.1.0",
-    "model_used": "claude-sonnet-4-20250514",
-    "provider": "anthropic",
-    "analysis_duration_ms": 42300
-  }
-}
-```
-
-### repo
-
-```json
-{
-  "repo": {
-    "name": "example-repo",
-    "languages": ["python", "typescript"],
-    "file_count": 214,
-    "module_count": 12,
-    "analysis_time": "2026-03-11T18:00:00Z"
-  }
-}
-```
-
-### modules
-
-```json
-{
-  "modules": [
-    {
-      "id": "payments",
-      "path": "src/payments",
-      "language": "python",
-      "file_count": 17,
-      "risk_score": 0.63,
-      "complexity_score": 0.72
-    }
-  ]
-}
-```
-
-### dependencies
-
-```json
-{
-  "dependencies": [
-    {
-      "from": "payments",
-      "to": "database",
-      "type": "import"
-    }
-  ]
-}
-```
-
-### risks
-
-```json
-{
-  "risks": [
-    {
-      "id": "risk_001",
-      "severity": "high",
-      "type": "architecture",
-      "pass": "architecture",
-      "module": "payments",
-      "file": "src/payments/processor.py",
-      "title": "Circular dependency detected",
-      "description": "processor imports ledger and ledger imports processor",
-      "confidence": 0.82,
-      "evidence_lines": [43, 44, 45]
-    }
-  ]
-}
-```
-
-Severity values: `high`, `medium`, `low`
-Type values: `architecture`, `bug`, `security`
-
-### files
-
-```json
-{
-  "files": [
-    {
-      "path": "src/payments/processor.py",
-      "module": "payments",
-      "language": "python",
-      "lines": 842,
-      "complexity": 0.78,
-      "risk_score": 0.86
-    }
-  ]
-}
-```
-
-### subsystems (optional)
-
-```json
-{
-  "subsystems": [
-    {
-      "id": "payment_pipeline",
-      "modules": ["payments", "ledger", "queue"]
-    }
-  ]
-}
-```
+- Add `//go:embed static/report.html` to `internal/report/report.go`
+- Update `report.Generate()` to template `analysis.json` content inline into the embedded HTML as `window.__MRI_DATA__ = <json>;` and write the result to `.repo-mri/report.html`
+- `analysis.json` continues to be written separately as the canonical machine-readable artifact
+- Update root `Makefile`: `ui-build` target runs `vite build` in `ui/` and copies output to `internal/report/static/report.html`; `build` target depends on `ui-build`
+- Update `README.md`: document `report.html` output, how to open it, and the `make ui-dev` workflow
+- Integration test: verify `report.html` is written, non-empty, and contains the repo name string after `repo-mri analyze`
 
 ---
 
 ## Error Handling
 
-- Missing API keys: exit with message listing which env vars are required
-- Clone failure: exit with the git error
-- Empty or non-code repository: exit with clear message
-- AI pass failure: log the error, skip the pass, continue with remaining passes, note skipped passes in `meta`
-- Partial results are acceptable — always write output if any analysis succeeded
----
-
-## Post-Phase-6 Improvements
-
-*Human-authorized addition. Phases 7, 7a, 8, and 9 must be completed before UI work begins. Phase 10 is deferred pending a spike.*
+- `window.__MRI_DATA__` absent or not a valid object: render a full-page error state explaining that `report.html` must be generated by `repo-mri analyze`, not opened standalone from the `ui/` build directory
+- `schema_version` mismatch: render a warning banner noting the CLI version that produced the file and suggesting a re-run with a current binary
+- Empty `modules[]`: render an empty state with the repo name and a note that no modules were detected
+- Missing `risks[]`: render the graph without findings overlay; no error
 
 ---
 
-### Phase 7 — CLI Hardening
+## Coding Standards
 
-Low-risk, high-impact fixes. No schema changes. Complete all items before moving to Phase 7a.
-
-**7a — Exclude test files from AI passes**
-
-- In `internal/analysis/passes.go`, filter `buildFileChunks` to skip files matching test file patterns
-- Go: `strings.HasSuffix(f.Path, "_test.go")`
-- JS/TS: `*.test.ts`, `*.test.js`, `*.spec.ts`, `*.spec.js`
-- Ruby: `*_spec.rb`
-- Test files remain in static analysis (walker, complexity); exclusion applies only to `buildFileChunks`
-- Add test case: verify `_test.go` files do not appear in any chunk returned by `buildFileChunks`
-
-**7b — Token budget enforcement in chunking**
-
-- Replace the fixed 50-file chunk limit with a dual constraint: max 50 files OR max 80,000 characters of content per chunk, whichever is hit first
-- 80k chars ≈ ~20k tokens, well within model context with headroom for system prompt and response
-- `chunkSize` constant remains as the file-count ceiling; add `chunkCharLimit = 80_000` constant alongside it
-- Add test case covering a chunk that hits the character limit before the file limit
-
-**7c — Context timeout on AI pipeline**
-
-- Add `--timeout` flag to the `analyze` command (default: `5m`, type: `time.Duration`)
-- Wrap `context.Background()` with `context.WithTimeout` before passing to `ingestion.Ingest` and downstream
-- Deferred cancel must be called on all exit paths
-- Add test: verify a pre-cancelled context surfaces as an error from `runAnalyze`
-
-**7d — Fix `moduleForFile` longest-prefix matching**
-
-- Current implementation returns the first module whose `Path` is a prefix of the file path; overlapping paths (e.g. `src/pay` and `src/payment`) can match the wrong module
-- Fix: iterate all modules, track the match with the longest `m.Path`, return that
-- Add table-driven test cases covering overlapping path prefixes
-- This item is a prerequisite for Phase 8
-
-**7e — Make `graph-summary` a shared constant**
-
-- Define `const GraphSummaryPath = "graph-summary"` in `internal/providers/provider.go`
-- Replace all string literals `"graph-summary"` and `"graph"` in `passes.go` and `main.go` with the constant
-- No behaviour change; eliminates silent drift risk if the synthetic chunk name ever changes
-
----
-
-### Phase 7a — Prompt Tuning
-
-*Prerequisite: Phase 7 must be merged before beginning Phase 7a. This phase requires human evaluation of false-positive rate before and after — do not merge without that review.*
-
-- Prepend a contextual preamble to `buildUserMessage` describing the repo type and intentional patterns
-- Preamble is derived from `schema.Analysis` at call time: language list, a note that this is a CLI tool, and explicit acknowledgement that non-fatal error handling and `#nosec` annotations are intentional
-- Define the static portion as a constant in `anthropic.go`; append the dynamic portion (languages) at call time
-- Measurement: run `repo-mri analyze .` before and after; compare finding counts and false-positive rate; human reviews output before merge
-
----
-
-### Phase 8 — Go Package-Level Module Granularity
-
-*Prerequisite: Phase 7d (longest-prefix fix) must be merged before beginning Phase 8.*
-
-The most impactful CLI improvement before UI work. Go import paths are already package-scoped in the AST output; only the module-assignment logic in ingestion needs to change.
-
-- In `internal/ingestion/ingestion.go`, change module assignment for Go files: use the repo-relative directory path as the module ID rather than the top-level directory name
-- `internal/ingestion` and `internal/analysis` become distinct modules instead of both collapsing into `internal`
-- Module ID = repo-relative directory path (e.g. `internal/ingestion`); Module Path = same value
-- Dependency edges are already at import-path granularity from the AST parser; no changes needed to `imports.go`
-- Non-Go repos are unaffected; the existing top-level directory heuristic remains the fallback for all other languages
-- Update `ingestion_test.go` with a Go repo fixture that verifies package-level module splitting
-- Schema change: none required; `Module.ID` and `Module.Path` already support arbitrary strings
-- Bump `SchemaVersion` from `"1.0"` to `"1.1"` in `schema/analysis.go` on merge
-- Create `CHANGELOG.md` documenting the breaking change to `modules[]` and `dependencies[]` for Go repos
-
----
-
-### Phase 9 — Architecture Finding Target Model
-
-*Must not begin until Phase 7 is complete. No dependency on Phase 8.*
-
-- Add `TargetType string` and `TargetID string` fields to `schema.Risk`
-  - Valid `TargetType` values: `"file"`, `"module"`, `"repository"`
-  - `TargetID` is the file path, module ID, or repo name respectively
-- Architecture pass findings set `TargetType: "repository"`, `TargetID: a.Repo.Name`
-- Bug and security pass findings set `TargetType: "file"`, `TargetID: <file path>`
-- Update `report.go` to use `TargetType` for section routing rather than the `Type` field string comparison
-- Add table-driven tests covering all three target types
-- Bump `SchemaVersion` to `"1.2"` in `schema/analysis.go` on merge
-- Update `CHANGELOG.md`
-
----
-
-### Phase 10 — Structural Analysis (Deferred)
-
-*Do not begin until UI work is underway and there is a visual consumer for the output.*
-
-Before committing to structural embeddings and a vector store (a significant new infrastructure dependency), run a spike to determine whether k-means clustering on existing static metrics — complexity score, import count, file count, dependency edge count — provides sufficient clustering signal without new dependencies.
-
-- **Spike deliverable:** a standalone script that reads `analysis.json` and outputs proposed clusters using only the data already present
-- If the spike demonstrates useful clustering: implement in-process in Go, no new dependencies
-- If the spike reveals embeddings are necessary: evaluate vector store options and reopen planning before committing to an approach
-- Structural embeddings design notes are captured in `docs/phase10-embeddings-preview.md` for reference
+- All React components are functional components with named exports
+- No class components
+- No `any` types — use `unknown` and narrow explicitly
+- All D3 layout code is pure functions in `layout/`; no D3 selection or DOM manipulation outside `MapCanvas.tsx`
+- `useAnalysis`, `useSelection`, `useZoom` are the only hooks with side effects; all other state is derived
+- ESLint must report zero errors and zero warnings before each commit
+- Prettier must be clean before each commit
 
 ---
