@@ -1,10 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import type React from 'react'
 import { useAnalysis } from './hooks/useAnalysis'
-import { useSelection } from './hooks/useSelection'
+import { useAppNav } from './hooks/useAppNav'
 import { useZoom } from './hooks/useZoom'
 import { computeLayout } from './layout/layered'
-import type { ZoomLevel } from './layout/types'
 import { MapCanvas } from './components/MapCanvas'
 import { StatusBar } from './components/StatusBar'
 import { Tooltip } from './components/Tooltip'
@@ -12,8 +11,7 @@ import { Inspector } from './components/Inspector'
 
 export function App() {
   const analysis = useAnalysis()
-  const { selectedId, select } = useSelection()
-  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(2)
+  const { zoomLevel, setZoomLevel, selectedId, select } = useAppNav()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 

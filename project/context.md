@@ -834,3 +834,25 @@ Branch: phase-ui-3-interaction
 
 EOF
 
+
+---
+date: 2026-03-13T01:44:57-0400
+hash: vUY+p45MFLwWk8NgaJ9Nccrg+zwQgsEcGKhQLMkC/zU=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: fa11c2fc4c5e2777f28f59f9b89dd8d46ba5f179
+---
+
+Phase UI-3a: App Deep Links implemented.
+
+- project/project.md: added Phase UI-3a spec (hash-based URL routing, deferred query-string approach for future server model); updated coding standards — useAppNav replaces useSelection as the hook with navigation side effects
+- ui/src/hooks/useAppNav.ts: new hook managing zoomLevel and selectedId as URL-hash-synced state. parseHash/buildHash pure functions handle #z=<level>&s=<encoded-id> format. pushState on every navigation; popstate listener for browser back/forward. Safe on file:// URLs.
+- ui/src/hooks/useAppNav.test.ts: 13 tests — parseHash (valid, absent s, empty s, empty hash, malformed z, out-of-range z, no leading #, percent-encoded slashes), buildHash (no selection, with selection, percent-encoding), round-trip, popstate integration
+- ui/src/App.tsx: replaced useSelection + useState(zoomLevel) with useAppNav; interface identical
+- CodeRabbit: no findings. MRI: 0 static findings (AI passes skipped — low API credit).
+- 49 Vitest tests pass. ESLint clean. Vite build 161 kB.
+
+Branch: phase-ui-3a-app-deep-links
+
+EOF
+

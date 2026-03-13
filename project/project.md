@@ -208,6 +208,20 @@ Complete each phase fully before moving to the next.
 - Wire deep links into Inspector findings rows
 - Tests: deeplink URL generation for GitHub, VS Code (Unix), and VS Code (Windows) formats
 
+### Phase UI-3a — App Deep Links
+
+Encode navigational state in the URL hash so the browser back/forward buttons work within the app and users can share a link that opens the exact view they are looking at.
+
+- Implement `useAppNav` hook: manages `zoomLevel` and `selectedId` as URL-synced state
+  - On mount: parse `window.location.hash` and initialise state from it
+  - On every navigation action (zoom change, selection change): call `history.pushState` to update the hash without reloading
+  - Listen for `popstate` events and sync state back to React on browser back/forward
+  - Hash format: `#z=<level>&s=<encoded-id>` using `URLSearchParams`; absent `s` means no selection
+  - Module IDs containing `/` must be percent-encoded in the URL
+- Replace separate `useState` calls for `zoomLevel` and `selectedId` in `App.tsx` with `useAppNav`; exported interface is identical (`{ zoomLevel, setZoomLevel, selectedId, select }`)
+- Use hash-based routing (not query-string `pushState`) — hash is safe on `file://` URLs and standard for server-free SPAs; query-string approach is deferred until a server-based delivery model is adopted
+- Tests: URL serialisation, URL parsing (with and without selection), round-trip, `popstate` sync, and handling of malformed or missing hash
+
 ### Phase UI-4 — Search
 
 - Implement `SearchBar.tsx`: controlled input filtering modules, files, and findings by name/title
@@ -242,7 +256,7 @@ Complete each phase fully before moving to the next.
 - No class components
 - No `any` types — use `unknown` and narrow explicitly
 - All D3 layout code is pure functions in `layout/`; no D3 selection or DOM manipulation outside `MapCanvas.tsx`
-- `useAnalysis`, `useSelection`, `useZoom` are the only hooks with side effects; all other state is derived
+- `useAnalysis`, `useAppNav`, `useZoom` are the only hooks with side effects; all other state is derived
 - ESLint must report zero errors and zero warnings before each commit
 - Prettier must be clean before each commit
 
