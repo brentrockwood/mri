@@ -25,10 +25,14 @@ var reportHTML []byte
 // directly from the file system without a web server.
 // outDir must already exist. The report file is written with mode 0600.
 func GenerateHTML(a *schema.Analysis, outDir string) error {
-	data, err := json.Marshal(a)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(true)
+	if err := enc.Encode(a); err != nil {
 		return fmt.Errorf("report: marshal analysis for HTML: %w", err)
 	}
+	// Trim the trailing newline added by json.Encoder.Encode.
+	data := bytes.TrimRight(buf.Bytes(), "\n")
 
 	// Inject <script>window.__MRI_DATA__ = <json>;</script> just before </head>.
 	injection := append([]byte("<script>window.__MRI_DATA__ = "), data...)
