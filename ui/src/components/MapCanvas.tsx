@@ -116,6 +116,8 @@ interface NodeProps {
   score: number
   glow: boolean
   glowId: string
+  hoverGlowId: string
+  shadowId: string
   selected: boolean
   dimmed: boolean
   onClick: (id: string) => void
@@ -123,12 +125,17 @@ interface NodeProps {
   onDoubleClick: (id: string) => void
 }
 
-function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHover, onDoubleClick }: NodeProps) {
+function GraphNode({ node, score, glow, glowId, hoverGlowId, shadowId, selected, dimmed, onClick, onHover, onDoubleClick }: NodeProps) {
   const { id, x, y, width, height } = node
   const [hovered, setHovered] = useState(false)
   const fill = complexityColor(score)
-  const strokeColor = hovered ? '#93c5fd' : (selected ? '#f8fafc' : '#1e293b')
-  const strokeWidth = hovered || selected ? 2.5 : 1.5
+  const strokeColor = selected ? '#f8fafc' : '#1e293b'
+  const strokeWidth = selected ? 2.5 : 1.5
+  const activeFilter = hovered
+    ? `url(#${hoverGlowId})`
+    : glow
+      ? `url(#${glowId})`
+      : `url(#${shadowId})`
   return (
     <g
       onClick={(e) => { e.stopPropagation(); onClick(id) }}
@@ -147,7 +154,7 @@ function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHov
         fill={fill}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
-        filter={glow ? `url(#${glowId})` : undefined}
+        filter={activeFilter}
       />
       <text
         x={x + width / 2}
@@ -166,7 +173,7 @@ function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHov
 
 // ── SVG defs ──────────────────────────────────────────────────────────────────
 
-function SvgDefs({ arrowId, glowId }: { arrowId: string; glowId: string }) {
+function SvgDefs({ arrowId, glowId, hoverGlowId, shadowId }: { arrowId: string; glowId: string; hoverGlowId: string; shadowId: string }) {
   return (
     <defs>
       <marker
@@ -180,12 +187,21 @@ function SvgDefs({ arrowId, glowId }: { arrowId: string; glowId: string }) {
       >
         <polygon points="0 0, 8 3, 0 6" fill="#475569" />
       </marker>
+      {/* Subtle depth shadow applied to all nodes */}
+      <filter id={shadowId} x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="black" floodOpacity="0.55" />
+      </filter>
+      {/* Risk glow for high-severity nodes */}
       <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur stdDeviation="4" result="blur" />
         <feMerge>
           <feMergeNode in="blur" />
           <feMergeNode in="SourceGraphic" />
         </feMerge>
+      </filter>
+      {/* Hover glow — blue-white, replaces other filters when hovered */}
+      <filter id={hoverGlowId} x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor="#93c5fd" floodOpacity="0.65" />
       </filter>
     </defs>
   )
@@ -232,6 +248,8 @@ export function MapCanvas({
   const uid = useId()
   const arrowId = `arrow-${uid}`
   const glowId = `glow-${uid}`
+  const hoverGlowId = `hover-glow-${uid}`
+  const shadowId = `shadow-${uid}`
 
   const { nodes, edges } = layout
   const { modules, risks, files } = analysis
@@ -250,7 +268,7 @@ export function MapCanvas({
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
-      <SvgDefs arrowId={arrowId} glowId={glowId} />
+      <SvgDefs arrowId={arrowId} glowId={glowId} hoverGlowId={hoverGlowId} shadowId={shadowId} />
 
       {/* Edges drawn first so nodes render on top */}
       <g>
@@ -272,6 +290,8 @@ export function MapCanvas({
             score={scoreFor(node.id, modules, isArchLevel, files, isFilesLevel)}
             glow={glowFor(node.id, risks, isArchLevel)}
             glowId={glowId}
+            hoverGlowId={hoverGlowId}
+            shadowId={shadowId}
             selected={node.id === selectedId}
             dimmed={dimFor(node.id, matchingIds, isArchLevel)}
             onClick={onNodeClick}

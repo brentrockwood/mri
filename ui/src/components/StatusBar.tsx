@@ -29,7 +29,7 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div className="bg-panel border-t border-border-subtle shrink-0 flex items-end gap-4 px-4 pb-3">
+    <div className="bg-panel shrink-0 flex items-end gap-4 px-4 pb-3">
       {/* Tab strip - fixed-width tabs, bottom-left */}
       <div className="flex items-end gap-1 shrink-0">
         {LEVELS.map((l) => (
@@ -37,9 +37,9 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
             key={l}
             onClick={() => onLevelChange(l)}
             className={cn(
-              'px-6 py-2 font-mono text-[1.25rem] cursor-pointer border border-border-subtle rounded-t-[4px] transition-colors duration-150',
+              'px-6 py-2 font-mono text-[1.25rem] cursor-pointer border border-border-subtle rounded-[4px] transition-colors duration-150',
               l === level
-                ? 'bg-canvas text-text-primary shadow-[var(--shadow-tab-active)] [border-bottom-color:var(--color-canvas)]'
+                ? 'bg-canvas text-text-primary shadow-[var(--shadow-tab-active)] border-t-0'
                 : 'bg-panel text-text-muted shadow-[var(--shadow-tab-inactive)] hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)]',
             )}
           >

@@ -968,3 +968,20 @@ Branch: phase-ui-6
 
 EOF
 
+
+---
+date: 2026-03-13T13:14:07-0400
+hash: ZgMLM1VeW7zvPekbk9qNPhjhCv2CCQSJD9p1G0UrWOg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 15b046ff684f594a067e9cf76f10a12cc274b27c
+---
+
+UI polish: tab rounding, canvas-tab merge, hover glows, node depth shadows. Branch: phase-ui-6
+
+StatusBar: removed border-t from wrapper; active tab border-t-0 + rounded-[4px] so selected tab appears seamlessly part of canvas; all tabs fully rounded.
+
+MapCanvas: hover now uses feDropShadow blue-white glow filter (hoverGlowId) instead of stroke color change; all nodes get subtle depth drop-shadow filter (shadowId) as default; risk glow filter (glowId) still applied for high-severity nodes; hover takes priority over all other filters.
+
+EOF
+
