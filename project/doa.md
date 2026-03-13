@@ -88,19 +88,6 @@ project/scripts/read-context -h        # Headers only (date, hash, agent, model)
 project/scripts/read-context -n 5 -h   # Headers of last 5 entries
 ```
 
-### Rotating the context log
-
-Use `project/scripts/rotate-context` when `context.md` grows large. By default it rotates at 1MB, archiving older entries to a timestamped overflow file and keeping the two most recent entries in the active file.
-
-```bash
-project/scripts/rotate-context                        # Defaults: 1MB limit, keep 2 entries
-project/scripts/rotate-context --size 524288 --keep 3 # Custom limits
-```
-
-The overflow filename is printed to stdout on success. Run this manually when needed, or after any particularly active session.
-
----
-
 ## Phases of a feature
 
 ### Planning
@@ -145,7 +132,7 @@ Wherever appropriate, use pure functions. They are easier to test.
 
 ### Source code location 
 
-All new source code goes in ./src unless an explicit decision recorded in project.md specifies a different location. Do not create new top-level directories without human authorization.
+All new source code goes in `./src` unless an explicit decision recorded in project.md specifies a different location. Do not create new top-level directories without human authorization.
 
 ### Dependencies
 
@@ -183,6 +170,10 @@ It is inevitable that these will happen once in a while. In most cases we will c
 ### Documentation
 
 We should strive to keep user-facing documentation like `README.md`, API docs, etc. continuously up to date with the truth in the code. They are everyone's responsibility. As mentioned before, these are artifacts just like code and do not influence our operational choices.
+
+## Notifications
+
+The template contains a script, `/scripts/notify` which takes a single unnamed message argument. It notifies the human that something is required. If you complete a task, need approval, or anything else that requires human intervention and the user has not responded in one minute, execute the notify script with a short message to indicate your status.
 
 ---
 
@@ -225,6 +216,8 @@ Complete this checklist before marking the interaction done:
    - Stage changed files — **context entry must be included**
    - Write a clear commit message (see Commit Messages section)
    - Do NOT push — only humans can push
+
+6. **Notify** Unless it has been a no-code-change short interaction, use `scripts/notify` to notify the human of your status.
 
 ---
 
@@ -287,10 +280,7 @@ The phrase **send 'er** is a command which has been chosen because it is unlikel
    - Only proceed if confirmed
 6. Push to origin.
 7. Open a pull request for the change.
-
-## Notifications
-
-The template contains a script, `/scripts/notify` which takes a single unnamed message argument. It notifies the human that something is required. If you complete a task, need approval, or anything else that requires human intervention and the user has not responded in one minute, execute the notify script with a short message to indicate your status.
+8. Notify human.
 
 ---
 
@@ -331,22 +321,21 @@ project/scripts/add-context ... --output project/context.md "..."  # after each 
 
 **Completing an interaction:**
 ```bash
-project/scripts/add-context --agent "..." --model "..." --output project/context.md "Summary. Branch: <branch>"
-# run security scan if files changed
-# report progress with diffs
-git add . && git commit -m "Component: Summary"  # context entry must be included
-# do NOT push
+- project/scripts/add-context --agent "..." --model "..." --output project/context.md "Summary. Branch: <branch>"
+- run security scan if files changed
+- report progress with diffs
+- git add . && git commit -m "Component: Summary"  # context entry must be included
 ```
 
 **Finishing a feature:**
 ```
-Human declares feature complete
-Human says "send 'er"
-Run full check sequence
-Confirm and push
-Open PR
+- Human declares feature complete
+- Human says "send 'er"
+- Run full check sequence
+- Confirm and push
+- Open PR
+- Notify human
 ```
-
 ---
 
 ## Overarching goals
