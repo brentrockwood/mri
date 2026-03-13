@@ -70,7 +70,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	moduleLang := map[string]map[string]int{} // module → language → count
 
 	for _, fi := range files {
-		mod := moduleID(fi.Path)
+		mod := moduleID(fi.Path, fi.Language)
 		moduleFiles[mod] = append(moduleFiles[mod], fi)
 		if moduleLang[mod] == nil {
 			moduleLang[mod] = map[string]int{}
@@ -111,7 +111,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	var schemaFiles []schema.File
 
 	for _, fi := range files {
-		mod := moduleID(fi.Path)
+		mod := moduleID(fi.Path, fi.Language)
 
 		schemaFiles = append(schemaFiles, schema.File{
 			Path:     fi.Path,
@@ -195,13 +195,24 @@ func isRemoteURL(source string) bool {
 }
 
 // moduleID returns the module ID for a file at the given relative path.
-// Files in root get "root"; others get their top-level directory name.
-func moduleID(relPath string) string {
-	parts := strings.SplitN(filepath.ToSlash(relPath), "/", 2)
-	if len(parts) == 1 {
+// For Go files, the module ID is the repo-relative directory path
+// (e.g. "internal/analysis"), giving package-level granularity.
+// For all other languages the existing top-level directory heuristic is used.
+// Files directly in the repo root get module ID "root".
+func moduleID(relPath, language string) string {
+	slashPath := filepath.ToSlash(relPath)
+	if language == "go" {
+		idx := strings.LastIndex(slashPath, "/")
+		if idx == -1 {
+			return "root"
+		}
+		return slashPath[:idx]
+	}
+	idx := strings.Index(slashPath, "/")
+	if idx == -1 {
 		return "root"
 	}
-	return parts[0]
+	return slashPath[:idx]
 }
 
 // modulePath returns a display path for the module.
@@ -223,19 +234,25 @@ func dominantLanguage(counts map[string]int) string {
 	return best
 }
 
-// importToModule attempts to map an import path to a known module ID.
-// It checks whether any path component matches a module ID in the set.
+// importToModule maps an import path to the longest-matching module ID in the
+// set. It returns the module ID whose value equals imp or appears as a
+// slash-delimited suffix of imp (e.g. "internal/analysis" matches
+// "github.com/user/repo/internal/analysis"). Longest match wins so that
+// "internal/analysis" is preferred over "internal" when both are present.
 func importToModule(imp string, modules map[string]bool) string {
-	// Normalize slashes and split.
-	parts := strings.Split(filepath.ToSlash(imp), "/")
-	// Walk from the most-specific segment to the least.
-	for i := len(parts) - 1; i >= 0; i-- {
-		seg := parts[i]
-		if modules[seg] {
-			return seg
+	imp = filepath.ToSlash(imp)
+	best := ""
+	for modID := range modules {
+		if modID == "root" {
+			continue
+		}
+		if imp == modID || strings.HasSuffix(imp, "/"+modID) {
+			if len(modID) > len(best) {
+				best = modID
+			}
 		}
 	}
-	return ""
+	return best
 }
 
 // sortedKeys returns the keys of a bool map in sorted order.

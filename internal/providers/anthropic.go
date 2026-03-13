@@ -29,6 +29,8 @@ This is a Go CLI tool. The following patterns are intentional and accepted:
 
 5. OUTPUT DIRECTORY PERMISSIONS: A directory created with 0o700 (owner-only) is the correct restrictive choice for user-owned output. Do NOT report this as overly permissive or overly restrictive.
 
+6. UNBOUNDED SOURCE FILE READS: os.ReadFile calls that read source code files during static analysis (complexity scoring, import parsing) have no artificial size limit because developer-owned source files are expected to be small. Do NOT report "missing size limit", "unbounded read", "potential OOM", or similar findings for analysis code that reads source files from a repository walk.
+
 Only report findings that are genuinely problematic and not covered by any rule above.`
 
 // AnthropicProvider implements AnalysisProvider using the Anthropic API.

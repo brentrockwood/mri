@@ -579,3 +579,61 @@ send 'er gate passed for Phase 7a. Branch: phase-7a-prompt-tuning. gosec: 0. goi
 
 EOF
 
+
+---
+date: 2026-03-12T18:00:27-0400
+hash: fknGD+CFg2r/ASitIOJtjpuM+OG/fo6IY5cI2mFDl4Q=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d1e198bfdb39a5f9e9c6dbc20949cb16b6f99886
+---
+
+Phase 8: Go package-level module granularity. Branch: phase-8-go-package-modules.
+
+Changes:
+- internal/ingestion/ingestion.go: moduleID(relPath, language) now uses full directory path as module ID for Go files (e.g. "internal/analysis" instead of "internal"). Non-Go unchanged.
+- importToModule rewritten with suffix-based longest-match instead of segment walk; handles path-based module IDs.
+- internal/ingestion/ingestion_test.go (new): TestIngest_GoPackageLevelModules, TestIngest_NonGoTopLevelModules, TestModuleID, TestImportToModule.
+- schema/analysis.go: SchemaVersion bumped "1.0" → "1.1".
+- CHANGELOG.md (new): documents breaking change to modules[] and dependencies[] for Go repos.
+
+All tests pass. Lint and gosec pending (send 'er gate).
+
+EOF
+
+
+---
+date: 2026-03-12T19:27:12-0400
+hash: ZsLfc9RpG0qzb0Ht/6KlVOFRSX/nFsl1As5sMUq5iK4=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 1fae55c8ce48a115cb87e7f9f390f39fb721ba49
+---
+
+Phase 8 post-review. Branch: phase-8-go-package-modules.
+
+Tool findings (4): all false positives.
+- complexity.go ReadFile: recurring "unbounded read" pattern — added preamble rule 6 to suppress
+- passes.go slice bounds: no index accesses exist in buildFileChunks, hallucination
+- anthropic.go resp.Content: range over nil slice is safe in Go, false positive
+- openai.go resp.Choices[0].Message: Message is a value type in SDK, false positive
+
+CodeRabbit finding: import_count on generated analysis.json — skip generated files.
+
+Change: added rule 6 to repoPreamble in anthropic.go (UNBOUNDED SOURCE FILE READS). All tests pass, lint clean.
+
+EOF
+
+
+---
+date: 2026-03-12T20:06:04-0400
+hash: J2ERERpr45STs84+N8LNkBb4Ty+QtvTpiEW0xv+YxqU=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 350f217965923a6e04abb6a74b7aaec992df5172
+---
+
+send 'er gate passed for Phase 8. Branch: phase-8-go-package-modules. gosec: 0. go vet: clean. golangci-lint: clean. go test -race: all pass. go build: clean. Ready to push and open PR.
+
+EOF
+
