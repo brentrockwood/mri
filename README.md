@@ -60,7 +60,16 @@ Output is written to `.repo-mri/` in the current working directory:
 ```
 .repo-mri/
   analysis.json   # canonical structured artifact
-  report.md       # human-readable summary (Phase 6)
+  report.md       # human-readable Markdown summary
+  report.html     # interactive visual report — open in any browser
+```
+
+Open the HTML report directly from disk (no web server required):
+
+```bash
+open .repo-mri/report.html          # macOS
+xdg-open .repo-mri/report.html      # Linux
+start .repo-mri/report.html         # Windows
 ```
 
 ## Development
@@ -68,6 +77,7 @@ Output is written to `.repo-mri/` in the current working directory:
 ### Prerequisites
 
 - Go 1.23+
+- Node.js 18+ and npm (for the UI)
 - `golangci-lint` (`brew install golangci-lint`)
 - `goimports` (`go install golang.org/x/tools/cmd/goimports@latest`)
 - `gosec` (`go install github.com/securego/gosec/v2/cmd/gosec@latest`)
@@ -75,7 +85,9 @@ Output is written to `.repo-mri/` in the current working directory:
 ### Common tasks
 
 ```bash
-make build          # native binary → bin/repo-mri
+make build          # build UI then compile native binary → bin/repo-mri
+make ui-build       # build UI only → internal/report/static/report.html
+make ui-dev         # start Vite dev server for UI development
 make test           # go test -race -count=1 ./...
 make lint           # golangci-lint run ./...
 make vet            # go vet ./...
@@ -85,6 +97,17 @@ make install        # build + install to /usr/local/bin
 make clean          # remove bin/ and dist/
 make version        # print resolved version string
 ```
+
+### UI development workflow
+
+The interactive HTML report is a single-file React app built with Vite. During development, run the dev server against a real analysis output:
+
+```bash
+repo-mri analyze .                  # produces .repo-mri/analysis.json
+make ui-dev                         # starts http://localhost:5173
+```
+
+The dev server reads `analysis.json` via `window.__MRI_DATA__` injected from the file. When you're done, `make build` bakes the compiled UI into the binary via `//go:embed`.
 
 ### Cross-compilation targets
 
