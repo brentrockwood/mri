@@ -738,3 +738,16 @@ send 'er gate for phase-ui-2-graph-layout-rendering. gosec: 0. goimports: clean.
 
 EOF
 
+
+---
+date: 2026-03-13T00:32:23-0400
+hash: AlQfjgKtI9IfKBF6q0YcpVEEzVZe8b87oMSa4oNtSiU=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 9f33b3fb4f4bff1e4682715886d1ac3090d61ca6
+---
+
+CodeRabbit fixes for phase-ui-2. (1) report.go: explicit sort of Top Modules table (risk desc, complexity desc, file count desc, name asc); added footnote explaining sort order; added TestTopModulesSortOrder. (2) MapCanvas.tsx: unique SVG defs IDs via useId() to prevent collisions if multiple instances mount. (3) useZoom.ts: replaced React synthetic onWheel with native non-passive addEventListener({passive:false}) via svgRef; updated MapCanvasProps to accept svgRef instead of onWheel; updated App.tsx. All tests pass. Branch: phase-ui-2-graph-layout-rendering.
+
+EOF
+

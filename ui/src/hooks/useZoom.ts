@@ -14,13 +14,20 @@ const MAX_SCALE = 10
 
 /**
  * Manages SVG viewBox state for pan and continuous scroll-wheel zoom.
- * Reset when canvas dimensions change (e.g., after a zoom-level switch).
+ *
+ * Returns a `svgRef` that must be attached to the SVG element so that a
+ * non-passive native wheel listener can call `preventDefault()` — React's
+ * synthetic onWheel is passive in Chrome and cannot prevent page scroll.
  */
 export function useZoom(canvasWidth: number, canvasHeight: number) {
-  const initialVb = (): ViewBox => ({ x: 0, y: 0, width: canvasWidth, height: canvasHeight })
+  const [viewBox, setViewBox] = useState<ViewBox>(() => ({
+    x: 0,
+    y: 0,
+    width: canvasWidth,
+    height: canvasHeight,
+  }))
 
-  const [viewBox, setViewBox] = useState<ViewBox>(initialVb)
-  // Keep a ref in sync so event handlers always read the latest value
+  // Keep a ref in sync so event handlers always read the latest viewBox
   const vbRef = useRef(viewBox)
   useEffect(() => {
     vbRef.current = viewBox
@@ -33,25 +40,44 @@ export function useZoom(canvasWidth: number, canvasHeight: number) {
     setViewBox(vb)
   }, [canvasWidth, canvasHeight])
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent<SVGSVGElement>) => {
+  // Keep canvas dimensions accessible inside the native wheel handler without
+  // re-attaching the listener on every dimension change.
+  const dimsRef = useRef({ canvasWidth, canvasHeight })
+  useEffect(() => {
+    dimsRef.current = { canvasWidth, canvasHeight }
+  }, [canvasWidth, canvasHeight])
+
+  // The SVG element ref — consumers must attach this to the <svg> element.
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  // Attach a non-passive native wheel listener so preventDefault() works.
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    function onWheel(e: WheelEvent) {
       e.preventDefault()
-      const svgRect = e.currentTarget.getBoundingClientRect()
+      const { canvasWidth: cw, canvasHeight: ch } = dimsRef.current
+      const svgRect = svg!.getBoundingClientRect()
       const mx = (e.clientX - svgRect.left) / svgRect.width
       const my = (e.clientY - svgRect.top) / svgRect.height
       const factor = e.deltaY > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
       setViewBox((prev) => {
-        const curScale = canvasWidth / prev.width
+        const curScale = cw / prev.width
         const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, curScale / factor))
-        const newW = canvasWidth / newScale
-        const newH = canvasHeight / newScale
+        const newW = cw / newScale
+        const newH = ch / newScale
         const vbMx = prev.x + mx * prev.width
         const vbMy = prev.y + my * prev.height
         return { x: vbMx - mx * newW, y: vbMy - my * newH, width: newW, height: newH }
       })
-    },
-    [canvasWidth, canvasHeight],
-  )
+    }
+
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    return () => svg.removeEventListener('wheel', onWheel)
+  }, []) // Attached once; dimsRef and setViewBox are always current
+
+  // ── Pan ───────────────────────────────────────────────────────────────────
 
   const isPanning = useRef(false)
   const panOrigin = useRef({ clientX: 0, clientY: 0, vbX: 0, vbY: 0 })
@@ -80,5 +106,5 @@ export function useZoom(canvasWidth: number, canvasHeight: number) {
     isPanning.current = false
   }, [])
 
-  return { viewBox, isPanning, handleWheel, handleMouseDown, handleMouseMove, stopPan }
+  return { viewBox, isPanning, svgRef, handleMouseDown, handleMouseMove, stopPan }
 }

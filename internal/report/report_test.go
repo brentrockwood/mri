@@ -370,6 +370,38 @@ func TestTargetTypeRoutingAllThree(t *testing.T) {
 	}
 }
 
+// TestTopModulesSortOrder verifies the tie-breaking sort: risk desc, complexity desc,
+// file count desc, module name asc.
+func TestTopModulesSortOrder(t *testing.T) {
+	a := minimalAnalysis()
+	a.Modules = []schema.Module{
+		{ID: "pkg/z", RiskScore: 0.0, ComplexityScore: 0.5, FileCount: 3},
+		{ID: "pkg/a", RiskScore: 0.0, ComplexityScore: 0.5, FileCount: 3},
+		{ID: "pkg/b", RiskScore: 0.0, ComplexityScore: 0.8, FileCount: 1},
+		{ID: "pkg/c", RiskScore: 0.5, ComplexityScore: 0.1, FileCount: 1},
+	}
+	content := buildReport(&a)
+
+	// pkg/c has the highest risk score and must appear first (rank 1)
+	if !strings.Contains(content, "| 1 | pkg/c |") {
+		t.Error("expected pkg/c (highest risk) to be rank 1")
+	}
+	// pkg/b has higher complexity than pkg/a and pkg/z — must be rank 2
+	if !strings.Contains(content, "| 2 | pkg/b |") {
+		t.Error("expected pkg/b (highest complexity among tied risk) to be rank 2")
+	}
+	// pkg/a < pkg/z alphabetically — must appear before pkg/z
+	aIdx := strings.Index(content, "pkg/a")
+	zIdx := strings.Index(content, "pkg/z")
+	if aIdx == -1 || zIdx == -1 || aIdx > zIdx {
+		t.Error("expected pkg/a (alphabetically first) to appear before pkg/z in table")
+	}
+	// Footnote explaining sort order must be present
+	if !strings.Contains(content, "risk score (desc)") {
+		t.Error("expected sort-order footnote in report")
+	}
+}
+
 // TestTopModulesLimitedToTen verifies that only up to 10 modules appear in the table.
 func TestTopModulesLimitedToTen(t *testing.T) {
 	a := minimalAnalysis()

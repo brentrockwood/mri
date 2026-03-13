@@ -44,9 +44,9 @@ export function App() {
           isArchLevel={zoomLevel === 1}
           viewBox={zoom.viewBox}
           selectedId={selectedId}
+          svgRef={zoom.svgRef}
           onNodeClick={handleNodeClick}
           onNodeHover={() => {}}
-          onWheel={zoom.handleWheel}
           onMouseDown={zoom.handleMouseDown}
           onMouseMove={zoom.handleMouseMove}
           onMouseUp={zoom.stopPan}

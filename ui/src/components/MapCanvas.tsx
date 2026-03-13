@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import type { Analysis, Module, Risk } from '../types/analysis'
 import type { LayoutEdge, LayoutNode, LayoutResult } from '../layout/types'
 import type { ViewBox } from '../hooks/useZoom'
@@ -66,9 +67,10 @@ function edgeEndpoints(from: LayoutNode, to: LayoutNode): Endpoints {
 interface EdgeProps {
   edge: LayoutEdge
   nodeMap: Map<string, LayoutNode>
+  arrowId: string
 }
 
-function GraphEdge({ edge, nodeMap }: EdgeProps) {
+function GraphEdge({ edge, nodeMap, arrowId }: EdgeProps) {
   const from = nodeMap.get(edge.fromId)
   const to = nodeMap.get(edge.toId)
   if (!from || !to) return null
@@ -82,7 +84,7 @@ function GraphEdge({ edge, nodeMap }: EdgeProps) {
       y2={y2}
       stroke="#475569"
       strokeWidth={strokeWidth}
-      markerEnd="url(#arrow)"
+      markerEnd={`url(#${arrowId})`}
       opacity={0.8}
     />
   )
@@ -92,12 +94,13 @@ interface NodeProps {
   node: LayoutNode
   score: number
   glow: boolean
+  glowId: string
   selected: boolean
   onClick: (id: string) => void
   onHover: (id: string | null) => void
 }
 
-function GraphNode({ node, score, glow, selected, onClick, onHover }: NodeProps) {
+function GraphNode({ node, score, glow, glowId, selected, onClick, onHover }: NodeProps) {
   const { id, x, y, width, height } = node
   const fill = complexityColor(score)
   const strokeColor = selected ? '#f8fafc' : '#1e293b'
@@ -118,7 +121,7 @@ function GraphNode({ node, score, glow, selected, onClick, onHover }: NodeProps)
         fill={fill}
         stroke={strokeColor}
         strokeWidth={strokeWidth}
-        filter={glow ? 'url(#glow)' : undefined}
+        filter={glow ? `url(#${glowId})` : undefined}
       />
       <text
         x={x + width / 2}
@@ -137,11 +140,11 @@ function GraphNode({ node, score, glow, selected, onClick, onHover }: NodeProps)
 
 // ── SVG defs ──────────────────────────────────────────────────────────────────
 
-function SvgDefs() {
+function SvgDefs({ arrowId, glowId }: { arrowId: string; glowId: string }) {
   return (
     <defs>
       <marker
-        id="arrow"
+        id={arrowId}
         markerWidth="8"
         markerHeight="6"
         refX="7"
@@ -151,7 +154,7 @@ function SvgDefs() {
       >
         <polygon points="0 0, 8 3, 0 6" fill="#475569" />
       </marker>
-      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur stdDeviation="4" result="blur" />
         <feMerge>
           <feMergeNode in="blur" />
@@ -170,9 +173,9 @@ export interface MapCanvasProps {
   isArchLevel: boolean
   viewBox: ViewBox
   selectedId: string | null
+  svgRef: React.RefObject<SVGSVGElement>
   onNodeClick: (id: string) => void
   onNodeHover: (id: string | null) => void
-  onWheel: (e: React.WheelEvent<SVGSVGElement>) => void
   onMouseDown: (e: React.MouseEvent<SVGSVGElement>) => void
   onMouseMove: (e: React.MouseEvent<SVGSVGElement>) => void
   onMouseUp: () => void
@@ -184,13 +187,17 @@ export function MapCanvas({
   isArchLevel,
   viewBox,
   selectedId,
+  svgRef,
   onNodeClick,
   onNodeHover,
-  onWheel,
   onMouseDown,
   onMouseMove,
   onMouseUp,
 }: MapCanvasProps) {
+  const uid = useId()
+  const arrowId = `arrow-${uid}`
+  const glowId = `glow-${uid}`
+
   const { nodes, edges } = layout
   const { modules, risks } = analysis
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
@@ -199,20 +206,25 @@ export function MapCanvas({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={vbStr}
       style={{ display: 'block', width: '100%', height: '100%', background: '#0f172a' }}
-      onWheel={onWheel}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
     >
-      <SvgDefs />
+      <SvgDefs arrowId={arrowId} glowId={glowId} />
 
       {/* Edges drawn first so nodes render on top */}
       <g>
         {edges.map((edge) => (
-          <GraphEdge key={`${edge.fromId}->${edge.toId}`} edge={edge} nodeMap={nodeMap} />
+          <GraphEdge
+            key={`${edge.fromId}->${edge.toId}`}
+            edge={edge}
+            nodeMap={nodeMap}
+            arrowId={arrowId}
+          />
         ))}
       </g>
 
@@ -223,6 +235,7 @@ export function MapCanvas({
             node={node}
             score={scoreFor(node.id, modules, isArchLevel)}
             glow={glowFor(node.id, risks, isArchLevel)}
+            glowId={glowId}
             selected={node.id === selectedId}
             onClick={onNodeClick}
             onHover={onNodeHover}
