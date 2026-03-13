@@ -339,21 +339,15 @@ Before committing to further AI analysis investment, audit what existing static 
 
 ### Phase 10 - Material UI migration
 
-*(Supersedes the Future note below.)*
+Replace hand-rolled Tailwind UI components with Material UI equivalents. MUI's `Drawer`, `TextField`, `Chip`, `Tooltip`, `Table`, and theming system will clean up rough edge-case styling and improve accessibility. Requires defining a dark-mode MUI theme matching the existing design token palette. The SVG graph canvas (`MapCanvas`) remains unchanged — MUI is for the surrounding shell only.
 
-Port the surrounding shell UI components to Material UI. See **Future** section below for detail.
+Target components: Inspector, SearchBar, StatusBar, Tooltip.
 
 ---
 
 ### Phase 11 - Inspector richness
 
-Deepen the Inspector panel. Specific scope to be defined after the architectural review and Phase 9 findings.
-
----
-
-## Future
-
-- **Material UI component library**: replace the hand-rolled Tailwind UI components (Inspector, SearchBar, StatusBar, Tooltip) with Material UI equivalents. MUI's `Drawer`, `TextField`, `Chip`, `Tooltip`, `Table`, and theming system would clean up a large amount of rough edge-case styling and improve accessibility out of the box. Requires defining a dark-mode MUI theme that matches the existing design token palette. The SVG graph canvas (`MapCanvas`) would remain unchanged — MUI is for the surrounding shell only.
+Deepen the Inspector panel. Consider MUI `DataGrid` for file and dependency tables — sorting, filtering, and column resize would add significant navigability. Specific scope to be defined after the architectural review and Phase 9 findings.
 
 ---
 
