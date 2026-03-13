@@ -140,6 +140,20 @@ func TestModuleID(t *testing.T) {
 	}
 }
 
+// TestIngest_LocalRepoHasNoGithubSlug verifies that analysing a local directory
+// does not populate the GithubSlug field (it is only set for GitHub-sourced clones).
+func TestIngest_LocalRepoHasNoGithubSlug(t *testing.T) {
+	root := t.TempDir()
+	writeTestFile(t, root, "main.go", "package main\n")
+	result, err := Ingest(context.Background(), root)
+	if err != nil {
+		t.Fatalf("Ingest() error = %v", err)
+	}
+	if result.Analysis.Repo.GithubSlug != "" {
+		t.Errorf("expected empty GithubSlug for local repo, got %q", result.Analysis.Repo.GithubSlug)
+	}
+}
+
 // TestImportToModule verifies suffix-based module matching with longest-match.
 func TestImportToModule(t *testing.T) {
 	modules := map[string]bool{

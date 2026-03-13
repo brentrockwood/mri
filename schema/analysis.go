@@ -35,6 +35,9 @@ type Meta struct {
 // Repo holds repository-level summary data.
 type Repo struct {
 	Name         string    `json:"name"`
+	// GithubSlug is the "owner/repo" slug, populated when the source is a
+	// GitHub URL. Empty for local repository analysis.
+	GithubSlug   string    `json:"github_slug,omitempty"`
 	Languages    []string  `json:"languages"`
 	FileCount    int       `json:"file_count"`
 	ModuleCount  int       `json:"module_count"`

@@ -29,6 +29,8 @@ export interface Meta {
 /** Repository-level summary data. */
 export interface Repo {
   name: string
+  /** Full "owner/repo" slug, populated only when analyzed from a GitHub URL. */
+  github_slug?: string
   languages: string[]
   file_count: number
   module_count: number

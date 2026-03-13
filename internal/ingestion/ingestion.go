@@ -155,9 +155,16 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	})
 
 	repoName := filepath.Base(root)
+	var githubSlug string
 	if isRemoteURL(source) {
 		if u, err := url.Parse(source); err == nil {
-			repoName = strings.TrimSuffix(filepath.Base(u.Path), ".git")
+			slug := strings.TrimPrefix(u.Path, "/")
+			slug = strings.TrimSuffix(slug, ".git")
+			repoName = filepath.Base(slug)
+			// Capture the full "owner/repo" slug for GitHub deep links.
+			if strings.Count(slug, "/") == 1 {
+				githubSlug = slug
+			}
 		}
 	}
 
@@ -169,6 +176,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		},
 		Repo: schema.Repo{
 			Name:         repoName,
+			GithubSlug:   githubSlug,
 			Languages:    languages,
 			FileCount:    len(files),
 			ModuleCount:  len(modules),

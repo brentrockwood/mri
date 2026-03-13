@@ -80,13 +80,14 @@ function LinkButton({ href, label }: { href: string; label: string }) {
 
 interface FindingRowProps {
   risk: Risk
-  repoName: string
+  /** Full "owner/repo" GitHub slug; null for local repos (hides the GH link). */
+  repoName: string | null
   isWindows: boolean
 }
 
 function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
   const line = risk.evidence_lines?.[0]
-  const ghUrl = githubUrl(repoName, risk.file, line)
+  const ghUrl = repoName ? githubUrl(repoName, risk.file, line) : null
   const vsUrl = vscodeUrl(
     isWindows ? risk.file : `/${risk.file}`,
     line,
@@ -119,7 +120,7 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
         >
           {risk.severity}
         </span>
-        <span style={{ color: '#e2e8f0', fontSize: 12, flex: 1 }}>
+        <span style={{ color: '#e2e8f0', fontSize: 12, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>
           {risk.title}
         </span>
         <span style={{ color: '#64748b', fontSize: 10, flexShrink: 0 }}>
@@ -161,7 +162,7 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
           {risk.file}
           {line !== undefined ? `:${line}` : ''}
         </span>
-        <LinkButton href={ghUrl} label="gh" />
+        {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
         <LinkButton href={vsUrl} label="vs" />
         <CopyButton text={risk.file} />
       </div>
@@ -256,24 +257,30 @@ export interface InspectorProps {
 export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
   const { modules, risks, files, dependencies, repo } = analysis
 
-  const module = modules.find((m) => m.id === selectedId)
-
   const isWindows = detectWindowsPaths(files.map((f) => f.path))
+  const githubSlug = repo.github_slug ?? null
 
-  const moduleRisks = risks
-    .filter((r) => r.module === selectedId)
+  // Determine whether the selection is a module or a file.
+  const selectedFile = files.find((f) => f.path === selectedId) ?? null
+  const module = selectedFile
+    ? modules.find((m) => m.id === selectedFile.module) ?? null
+    : modules.find((m) => m.id === selectedId) ?? null
+
+  const displayedRisks = risks
+    .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
     .sort((a, b) => {
       const order = { high: 0, medium: 1, low: 2 }
       return (order[a.severity as keyof typeof order] ?? 3) -
         (order[b.severity as keyof typeof order] ?? 3)
     })
 
-  const moduleFiles = files
-    .filter((f) => f.module === selectedId)
-    .sort((a, b) => b.risk_score - a.risk_score)
+  // Files table: shown only when viewing a module (not a file).
+  const moduleFiles = selectedFile
+    ? []
+    : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score)
 
-  const imports = dependencies.filter((d) => d.from === selectedId).map((d) => d.to)
-  const importedBy = dependencies.filter((d) => d.to === selectedId).map((d) => d.from)
+  const imports = selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to)
+  const importedBy = selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from)
 
   return (
     <div
@@ -311,9 +318,25 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               wordBreak: 'break-all',
             }}
           >
-            {selectedId}
+            {selectedFile ? selectedFile.path.split('/').pop() : selectedId}
           </div>
-          {module && (
+          {selectedFile && (
+            <div style={{ fontSize: 11, color: '#475569', marginTop: 2, fontFamily: 'monospace' }}>
+              {selectedFile.path}
+            </div>
+          )}
+          {selectedFile ? (
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 10 }}>
+              <span>
+                Risk{' '}
+                <span style={{ color: severityColor(selectedFile.risk_score >= 0.7 ? 'high' : selectedFile.risk_score >= 0.4 ? 'medium' : 'low') }}>
+                  {Math.round(selectedFile.risk_score * 100)}
+                </span>
+              </span>
+              <span style={{ color: '#cbd5e1' }}>{selectedFile.lines}L</span>
+              {module && <span>in {module.id}</span>}
+            </div>
+          ) : module && (
             <div
               style={{
                 fontSize: 11,
@@ -377,18 +400,18 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
       >
         {/* Findings */}
         <SectionHeader>
-          Findings ({moduleRisks.length})
+          Findings ({displayedRisks.length})
         </SectionHeader>
-        {moduleRisks.length === 0 ? (
+        {displayedRisks.length === 0 ? (
           <div style={{ color: '#334155', fontSize: 11, padding: '8px 0' }}>
             No findings
           </div>
         ) : (
-          moduleRisks.map((r) => (
+          displayedRisks.map((r) => (
             <FindingRow
               key={r.id}
               risk={r}
-              repoName={repo.name}
+              repoName={githubSlug}
               isWindows={isWindows}
             />
           ))
