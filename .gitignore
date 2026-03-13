@@ -1,6 +1,7 @@
 # ============================================================
 # Secrets and credentials — NEVER commit these
 # ============================================================
+.env
 secrets.env
 credentials.json
 token.json
