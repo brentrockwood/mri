@@ -916,3 +916,26 @@ Branch: phase-ui-4-search
 
 EOF
 
+
+---
+date: 2026-03-13T11:51:43-0400
+hash: sI0LWvMEirFR8FLAvAlYsBSJx2L056fF7iL16yjVuRY=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 8eee479d8a266d7f7faaff9ad5346e15b4825db2
+---
+
+Phase UI-6-css complete. Branch: phase-ui-6-css
+
+Installed Tailwind CSS v4 (@tailwindcss/vite) with no PostCSS config. Created src/index.css with @import "tailwindcss" and @theme design tokens (canvas, panel, border-subtle/strong, risk-high/med/low, link, text scale, font-size-detail/label, shadow-panel/tab-active/inactive). Migrated all inline style props across App, MapCanvas, StatusBar, Tooltip, SearchBar, and Inspector to Tailwind utility classes. Dynamic computed values (complexityColor, mouse position, opacity) kept as inline styles. SVG presentation attributes unchanged.
+
+Simplify gate: extracted severityColorClass() and complexityBand() to lib/risk.ts, added lib/cn.ts (filters falsy before joining), removed redundant --color-surface token.
+
+Coderabbit gate: fixed border token names (border-strong now #475569 high-contrast, border-subtle #334155 low-contrast; renamed all usages to preserve visuals), fixed filepath.Base(slug) -> path.Base(slug) in ingestion.go for URL paths, added Space key + preventDefault to all role="button" keyboard handlers in Inspector.
+
+DOA gate: gosec clean (no HIGH), goimports fixed alignment in schema/analysis.go, go vet clean, golangci-lint 0 issues, go test -race all pass, go build clean. UI: eslint 0 warnings, vitest 64/64, vite build produces single self-contained report.html.
+
+Next: Phase UI-6 — visual refinements (activation tab, inspector shadow, single/double-click model, depth-style tab shadows, font sizes, hover glows, file node risk colors, search bar margin).
+
+EOF
+
