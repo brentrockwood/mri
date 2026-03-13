@@ -328,3 +328,21 @@ send 'er gate: gosec 0, goimports clean, go vet clean, golangci-lint clean, go t
 Merged. Proceed with phase 8.
 
 ---
+
+## [2026-03-12T20:06:12-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `350f217` | **sha256**: `d3ee578e5399`
+
+Phase 8 — Go Package-Level Module Granularity.
+
+Changes:
+- internal/ingestion/ingestion.go: moduleID now accepts language; Go files use full directory path as module ID (e.g. "internal/analysis" vs old "internal"). Non-Go unchanged.
+- importToModule rewritten with suffix-based longest-match; handles slash-path module IDs for Go.
+- internal/ingestion/ingestion_test.go (new): 4 tests covering Go package splitting, non-Go top-level heuristic, moduleID helper, importToModule.
+- schema/analysis.go: SchemaVersion 1.0 → 1.1.
+- CHANGELOG.md (new): documents breaking change to modules[] and dependencies[] for Go repos.
+- internal/providers/anthropic.go: added preamble rule 6 (UNBOUNDED SOURCE FILE READS) to suppress recurring false-positive OOM findings for analysis code.
+
+Post-review: 4 tool findings (all false positives), 1 CodeRabbit finding (generated file). Only substantive change was preamble rule 6.
+send 'er gate: gosec 0, go vet clean, golangci-lint clean, go test -race all pass, go build clean.
+
+---
