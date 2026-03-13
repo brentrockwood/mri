@@ -35,8 +35,8 @@ ui-build:
 ui-dev:
 	cd $(UI_DIR) && npm run dev
 
-## build: compile native binary to bin/<APP_NAME>
-build:
+## build: compile native binary to bin/<APP_NAME> (includes ui-build)
+build: ui-build
 	@mkdir -p $(BIN_DIR)
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(APP_NAME) $(CMD_PATH)
 

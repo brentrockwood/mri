@@ -3,6 +3,9 @@
 package report
 
 import (
+	"bytes"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -13,6 +16,36 @@ import (
 
 	"github.com/brentrockwood/mri/schema"
 )
+
+//go:embed static/report.html
+var reportHTML []byte
+
+// GenerateHTML writes report.html to outDir. It injects the analysis JSON into
+// the embedded HTML template as window.__MRI_DATA__ so the report can be opened
+// directly from the file system without a web server.
+// outDir must already exist. The report file is written with mode 0600.
+func GenerateHTML(a *schema.Analysis, outDir string) error {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(true)
+	if err := enc.Encode(a); err != nil {
+		return fmt.Errorf("report: marshal analysis for HTML: %w", err)
+	}
+	// Trim the trailing newline added by json.Encoder.Encode.
+	data := bytes.TrimRight(buf.Bytes(), "\n")
+
+	// Inject <script>window.__MRI_DATA__ = <json>;</script> just before </head>.
+	injection := append([]byte("<script>window.__MRI_DATA__ = "), data...)
+	injection = append(injection, []byte(";</script>")...)
+
+	html := bytes.Replace(reportHTML, []byte("</head>"), append(injection, []byte("</head>")...), 1)
+
+	outPath := filepath.Join(outDir, "report.html")
+	if err := os.WriteFile(outPath, html, 0o600); err != nil {
+		return fmt.Errorf("report: write %s: %w", outPath, err)
+	}
+	return nil
+}
 
 // Generate writes report.md to outDir based on the completed analysis a.
 // outDir must already exist. The report file is written with mode 0600.

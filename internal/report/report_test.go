@@ -10,6 +10,42 @@ import (
 	"github.com/brentrockwood/mri/schema"
 )
 
+// TestGenerateHTMLWritesToCorrectPath verifies GenerateHTML writes report.html,
+// the file is non-empty, contains the repo name, and has permissions 0600.
+func TestGenerateHTMLWritesToCorrectPath(t *testing.T) {
+	dir := t.TempDir()
+	a := minimalAnalysis()
+
+	if err := GenerateHTML(&a, dir); err != nil {
+		t.Fatalf("GenerateHTML() error = %v", err)
+	}
+
+	outPath := filepath.Join(dir, "report.html")
+	info, err := os.Stat(outPath)
+	if err != nil {
+		t.Fatalf("report.html not found: %v", err)
+	}
+
+	perm := info.Mode().Perm()
+	if perm != 0o600 {
+		t.Errorf("report.html permissions = %04o, want 0600", perm)
+	}
+
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read report.html: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("report.html is empty")
+	}
+	if !strings.Contains(string(data), "test-repo") {
+		t.Error("report.html does not contain repo name")
+	}
+	if !strings.Contains(string(data), "window.__MRI_DATA__") {
+		t.Error("report.html missing window.__MRI_DATA__ injection")
+	}
+}
+
 // minimalAnalysis returns a schema.Analysis with minimal required fields populated.
 func minimalAnalysis() schema.Analysis {
 	return schema.Analysis{

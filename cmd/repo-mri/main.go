@@ -193,6 +193,14 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Report:     %s\n", reportPath)
 	}
 
+	htmlPath := filepath.Join(outDir, "report.html")
+	if err := report.GenerateHTML(&result.Analysis, outDir); err != nil {
+		// Non-fatal: log and continue.
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: HTML report generation failed: %v\n", err)
+	} else {
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "HTML:       %s\n", htmlPath)
+	}
+
 	return nil
 }
 
