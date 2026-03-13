@@ -198,3 +198,10 @@ Phase UI-6-css: Tailwind v4 migration
 Completed Phase UI-6-css per project.md spec. Installed @tailwindcss/vite, established design token system in src/index.css (@theme), and migrated all inline React style props to Tailwind utility classes across all 5 component files and App.tsx. Introduced lib/cn.ts and moved severityColorClass/complexityBand to lib/risk.ts. Fixed 4 coderabbit findings (border token naming, URL slug path handling, a11y Space key). All gates passed: gosec, goimports, go vet, golangci-lint, go test -race, eslint, vitest 64/64, vite build.
 
 ---
+
+## [2026-03-13T12:22:45-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `f7863c3` | **sha256**: `a4fb8c43947f`
+
+Check that main is up to date with the latest PR#24. Then proceed with Phase UI-6.
+
+---
