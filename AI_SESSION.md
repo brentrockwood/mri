@@ -105,3 +105,32 @@ All clean: gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), 
 phase-ui-2-graph-layout-rendering
 
 ---
+
+## [2026-03-13T01:20:38-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `a42dc47` | **sha256**: `7d27f6d2889c`
+
+## Phase UI-3 Session Summary
+
+### Work completed
+
+**Phase UI-3: Interaction layer**
+
+- `ui/src/lib/deeplinks.ts`: `githubUrl`, `vscodeUrl` (Unix double-slash / Windows drive-letter format), `detectWindowsPaths`, `copyToClipboard`
+- `ui/src/lib/deeplinks.test.ts`: 13 tests covering all URL generation cases and path detection edge cases
+- `ui/src/components/Tooltip.tsx`: hover overlay for Level-2 module nodes — file count, LOC, complexity band (Low/Moderate/High), per-severity finding counts
+- `ui/src/components/Inspector.tsx`: right-side overlay panel — findings sorted by severity with GitHub/VS Code deep links + clipboard copy; imports/imported-by lists; file table sorted by risk score
+- `ui/src/components/MapCanvas.tsx`: `onBackgroundClick` prop; `GraphNode` calls `e.stopPropagation()` before forwarding click so SVG background click deselects
+- `ui/src/App.tsx`: wired hover/tooltip state, Inspector overlay, background deselect, combined mousemove handler
+- `ui/fixtures/analysis.json`: enriched with 2 additional risks and 2 additional files
+
+**Post-phase reviews:**
+- CodeRabbit finding: false positive against stale `.repo-mri/report.md`; fixed by adding `.repo-mri/` to `.gitignore`
+- MRI tool: 0 findings, health score 100/100
+
+### Gate results
+gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success), Vitest 36/36, ESLint clean.
+
+### Branch
+phase-ui-3-interaction
+
+---
