@@ -80,8 +80,16 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 		defer result.Cleanup()
 	}
 
+	if err = ctx.Err(); err != nil {
+		return fmt.Errorf("analyze: %w", err)
+	}
+
 	if err := analysis.Analyze(ctx, result.RootDir, &result.Analysis); err != nil {
 		return fmt.Errorf("analyze: static analysis: %w", err)
+	}
+
+	if err = ctx.Err(); err != nil {
+		return fmt.Errorf("analyze: %w", err)
 	}
 
 	// Select the AI analysis provider. If no API key is configured, skip AI

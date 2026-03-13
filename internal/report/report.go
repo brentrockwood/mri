@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -85,11 +86,25 @@ func buildReport(a *schema.Analysis) string {
 	fmt.Fprintf(&sb, "## Health Score: %d/100\n\n", score)
 	fmt.Fprintf(&sb, "> %s\n\n", ScoreBand(score))
 
-	// Top Modules by Risk
+	// Top Modules by Risk — sorted: risk desc, complexity desc, file count desc, name asc
 	fmt.Fprintf(&sb, "## Top Modules by Risk\n\n")
 	fmt.Fprintf(&sb, "| Rank | Module | Risk Score | Complexity | Files |\n")
 	fmt.Fprintf(&sb, "|---|---|---|---|---|\n")
-	top := a.Modules
+	top := make([]schema.Module, len(a.Modules))
+	copy(top, a.Modules)
+	sort.Slice(top, func(i, j int) bool {
+		mi, mj := top[i], top[j]
+		if mi.RiskScore != mj.RiskScore {
+			return mi.RiskScore > mj.RiskScore
+		}
+		if mi.ComplexityScore != mj.ComplexityScore {
+			return mi.ComplexityScore > mj.ComplexityScore
+		}
+		if mi.FileCount != mj.FileCount {
+			return mi.FileCount > mj.FileCount
+		}
+		return mi.ID < mj.ID
+	})
 	if len(top) > 10 {
 		top = top[:10]
 	}
@@ -97,7 +112,7 @@ func buildReport(a *schema.Analysis) string {
 		fmt.Fprintf(&sb, "| %d | %s | %.2f | %.2f | %d |\n",
 			i+1, m.ID, m.RiskScore, m.ComplexityScore, m.FileCount)
 	}
-	fmt.Fprintf(&sb, "\n")
+	fmt.Fprintf(&sb, "\n_Ranked by risk score (desc), complexity (desc), file count (desc), module name (asc)._\n\n")
 
 	// Architecture Findings (repository-level, routed by TargetType)
 	archFindings := filterRisks(a.Risks, func(r schema.Risk) bool {

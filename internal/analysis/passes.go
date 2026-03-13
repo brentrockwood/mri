@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -98,7 +99,7 @@ func buildFileChunks(root string, files []schema.File) ([][]providers.FileChunk,
 	var chunks [][]providers.FileChunk
 	var current []providers.FileChunk
 	var currentChars int
-	var firstErr error
+	var errs []error
 
 	for _, f := range files {
 		if isTestFile(f.Path) {
@@ -107,9 +108,7 @@ func buildFileChunks(root string, files []schema.File) ([][]providers.FileChunk,
 		absPath := filepath.Join(root, f.Path)
 		data, err := os.ReadFile(absPath) // #nosec G304 -- path from ingestion walk
 		if err != nil {
-			if firstErr == nil {
-				firstErr = err
-			}
+			errs = append(errs, err)
 			continue
 		}
 		// Flush current chunk if adding this file would exceed the char limit
@@ -134,7 +133,7 @@ func buildFileChunks(root string, files []schema.File) ([][]providers.FileChunk,
 	if len(current) > 0 {
 		chunks = append(chunks, current)
 	}
-	return chunks, firstErr
+	return chunks, errors.Join(errs...)
 }
 
 // isTestFile reports whether path matches a known test file pattern.

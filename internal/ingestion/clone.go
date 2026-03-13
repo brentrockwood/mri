@@ -17,6 +17,8 @@ func Clone(ctx context.Context, remoteURL string) (dir string, cleanup func(), e
 	}
 
 	cleanup = func() {
+		// Error intentionally ignored: this is a best-effort temp-dir cleanup
+		// and there is no useful recovery action if removal fails.
 		_ = os.RemoveAll(tmp)
 	}
 

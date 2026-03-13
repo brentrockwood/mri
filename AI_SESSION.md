@@ -76,3 +76,32 @@ send 'er
 send 'er gate run. Fixed 6 MEDIUM gosec findings (permissions, nosec annotations). All checks pass: gosec 0 issues, goimports clean, go vet clean, golangci-lint clean, tests pass with -race, build OK.
 
 ---
+
+## [2026-03-13T00:42:42-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `cb7c66a` | **sha256**: `3b02ce9c16c9`
+
+## Phase UI-2 Session Summary
+
+### Work completed this session
+
+**Phase UI-2: Path-hierarchy graph layout + SVG renderer** (resumed from previous session)
+
+The phase was already substantially complete. This session addressed post-phase review findings:
+
+**CodeRabbit findings fixed (prior session):**
+- React onWheel passive issue → replaced with native addEventListener non-passive wheel handler via svgRef
+- Hardcoded SVG filter/arrow IDs → replaced with useId() + string prefix in MapCanvas
+- report.go module sort order → added sort.Slice with deterministic tie-breaking + TestTopModulesSortOrder
+
+**MRI tool findings fixed (this session):**
+- risk_001 (HIGH, cmd/repo-mri/main.go): Added ctx.Err() checks between pipeline phases
+- risk_002 (MEDIUM, internal/analysis/passes.go): errors.Join replaces firstErr to surface all read errors
+- risk_003 (MEDIUM, internal/ingestion/clone.go): Comment added explaining intentionally ignored RemoveAll error
+
+### Gate results
+All clean: gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success).
+
+### Branch
+phase-ui-2-graph-layout-rendering
+
+---

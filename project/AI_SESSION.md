@@ -419,3 +419,10 @@ Phase UI-2 complete. Graph layout (path-hierarchy), SVG renderer (MapCanvas), pa
 send 'er gate passed for Phase UI-2. All Go and UI gates clean. 23/23 tests pass. Branch: phase-ui-2-graph-layout-rendering.
 
 ---
+
+## [2026-03-13T00:32:26-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `9f33b3f` | **sha256**: `9d780bd272f2`
+
+Applied 3 CodeRabbit fixes: report sort order + footnote, unique SVG IDs via useId(), non-passive native wheel listener. All tests pass. Branch: phase-ui-2-graph-layout-rendering.
+
+---
