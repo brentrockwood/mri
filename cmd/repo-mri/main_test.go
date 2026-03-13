@@ -69,11 +69,11 @@ func TestModuleForFile_GraphSummary(t *testing.T) {
 // TestFindingTarget verifies TargetType and TargetID assignment for all pass types.
 func TestFindingTarget(t *testing.T) {
 	tests := []struct {
-		typ        string
-		file       string
-		repoName   string
-		wantType   string
-		wantID     string
+		typ      string
+		file     string
+		repoName string
+		wantType string
+		wantID   string
 	}{
 		// Architecture findings target the repository.
 		{"architecture", "graph-summary", "my-repo", "repository", "my-repo"},

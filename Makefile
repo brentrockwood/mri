@@ -17,10 +17,23 @@ LDFLAGS   := -s -w \
 # Cross-compilation targets: os/arch pairs
 PLATFORMS := darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64
 
-.PHONY: all build dist install version test lint vet fmt clean help
+UI_DIR     ?= ui
+UI_STATIC  ?= internal/report/static/report.html
+
+.PHONY: all build dist install version test lint vet fmt clean help ui-build ui-dev
 
 ## all: vet, lint, test, build
 all: vet lint test build
+
+## ui-build: build the UI and copy report.html to internal/report/static/
+ui-build:
+	cd $(UI_DIR) && npm ci && npm run build
+	@mkdir -p $(dir $(UI_STATIC))
+	cp $(UI_DIR)/dist/index.html $(UI_STATIC)
+
+## ui-dev: start the Vite dev server for the UI
+ui-dev:
+	cd $(UI_DIR) && npm run dev
 
 ## build: compile native binary to bin/<APP_NAME>
 build:

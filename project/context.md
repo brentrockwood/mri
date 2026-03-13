@@ -686,3 +686,29 @@ Update doa and gitignore.
 
 EOF
 
+
+---
+date: 2026-03-12T23:25:45-0400
+hash: yExlk0Gs+2lxNw6AqmcmK512SdKyvx824vZMLEO3cAw=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2faf2a88a4bfcb345944f7773e0c2478f7d6e00e
+---
+
+Phase UI-1 complete. Scaffolded ui/ with Vite 5 + React 18 + TypeScript + vite-plugin-singlefile. Configured ESLint 8, Prettier, Vitest 2. Implemented src/types/analysis.ts (schema v1.2 mirror), useAnalysis hook (reads window.__MRI_DATA__, typed errors MriDataMissingError/MriDataInvalidError), stub App.tsx, mriDevDataPlugin for dev mode fixture injection. Added 4 passing Vitest tests. vite build produces single self-contained dist/index.html (143KB). Added make ui-build and make ui-dev to root Makefile. Updated .gitignore to exclude ui/dist/, ui/package-lock.json, internal/report/static/. Next: Phase UI-2 layout and rendering. Branch: phase-ui-1-project-skeleton.
+
+EOF
+
+
+---
+date: 2026-03-12T23:48:15-0400
+hash: ExYInqxVbvsDH5EvrRN8FGsv0uFQj839PdfA+vUGav8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 0f410e76b3cc50cd712dc6dedb42210a4bfaf013
+---
+
+send 'er gate for phase-ui-1-project-skeleton. gosec: 0 issues. goimports: fixed pre-existing formatting in cmd/repo-mri/main_test.go and internal/report/report_test.go. go vet: clean. golangci-lint: 0 issues. go test -race: all pass. go build: clean. UI lint: clean. UI prettier: clean (added .prettierignore). UI tests: 4/4 pass. CodeRabbit review: 0 findings. Branch: phase-ui-1-project-skeleton.
+
+EOF
+
