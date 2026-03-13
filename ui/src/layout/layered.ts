@@ -163,7 +163,7 @@ function layoutArchitecture(modules: Module[], dependencies: Dependency[]): Layo
 
 // ── Level 3: Files ────────────────────────────────────────────────────────────
 
-function layoutFiles(files: File[], selectedModuleId: string): LayoutResult {
+function layoutFiles(files: File[], selectedModuleId: string, availableWidth?: number): LayoutResult {
   const moduleFiles = files
     .filter((f) => f.module === selectedModuleId)
     .sort((a, b) => b.risk_score - a.risk_score)
@@ -174,7 +174,10 @@ function layoutFiles(files: File[], selectedModuleId: string): LayoutResult {
   const minLoc = Math.min(...locs)
   const maxLoc = Math.max(...locs)
 
-  const COLS = Math.max(1, Math.ceil(Math.sqrt(moduleFiles.length)))
+  const maxCols = availableWidth !== undefined
+    ? Math.max(1, Math.floor((availableWidth - CANVAS_PAD * 2) / (NODE_MAX_W + H_GAP)))
+    : Infinity
+  const COLS = Math.min(Math.max(1, Math.ceil(Math.sqrt(moduleFiles.length))), maxCols)
   const nodes: LayoutNode[] = moduleFiles.map((f, i) => {
     const col = i % COLS
     const row = Math.floor(i / COLS)
@@ -217,6 +220,7 @@ export function computeLayout(
   files: File[],
   zoomLevel: ZoomLevel,
   selectedId: string | null,
+  availableWidth?: number,
 ): LayoutResult {
   switch (zoomLevel) {
     case 1:
@@ -228,7 +232,7 @@ export function computeLayout(
       // If selectedId is a file path, use its parent module for the layout.
       const fileEntry = files.find((f) => f.path === selectedId)
       const moduleId = fileEntry ? fileEntry.module : selectedId
-      return layoutFiles(files, moduleId)
+      return layoutFiles(files, moduleId, availableWidth)
     }
   }
 }

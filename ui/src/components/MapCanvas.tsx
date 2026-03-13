@@ -1,5 +1,5 @@
-import { useId } from 'react'
-import type { Analysis, Module, Risk } from '../types/analysis'
+import { useId, useState } from 'react'
+import type { Analysis, File, Module, Risk } from '../types/analysis'
 import type { LayoutEdge, LayoutNode, LayoutResult } from '../layout/types'
 import type { ViewBox } from '../hooks/useZoom'
 import { complexityColor, hasHighSeverityRisk } from '../lib/risk'
@@ -19,7 +19,10 @@ function nodeLabel(id: string): string {
 }
 
 /** Complexity score for a node ID (returns 0 for Level 1 virtual nodes). */
-function scoreFor(nodeId: string, modules: Module[], isArchLevel: boolean): number {
+function scoreFor(nodeId: string, modules: Module[], isArchLevel: boolean, files: File[], isFilesLevel: boolean): number {
+  if (isFilesLevel) {
+    return files.find((f) => f.path === nodeId)?.risk_score ?? 0
+  }
   if (!isArchLevel) {
     return modules.find((m) => m.id === nodeId)?.complexity_score ?? 0
   }
@@ -117,18 +120,21 @@ interface NodeProps {
   dimmed: boolean
   onClick: (id: string) => void
   onHover: (id: string | null) => void
+  onDoubleClick: (id: string) => void
 }
 
-function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHover }: NodeProps) {
+function GraphNode({ node, score, glow, glowId, selected, dimmed, onClick, onHover, onDoubleClick }: NodeProps) {
   const { id, x, y, width, height } = node
+  const [hovered, setHovered] = useState(false)
   const fill = complexityColor(score)
-  const strokeColor = selected ? '#f8fafc' : '#1e293b'
-  const strokeWidth = selected ? 2.5 : 1.5
+  const strokeColor = hovered ? '#93c5fd' : (selected ? '#f8fafc' : '#1e293b')
+  const strokeWidth = hovered || selected ? 2.5 : 1.5
   return (
     <g
       onClick={(e) => { e.stopPropagation(); onClick(id) }}
-      onMouseEnter={() => onHover(id)}
-      onMouseLeave={() => onHover(null)}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(id) }}
+      onMouseEnter={() => { onHover(id); setHovered(true) }}
+      onMouseLeave={() => { onHover(null); setHovered(false) }}
       className="cursor-pointer"
       style={{ opacity: dimmed ? DIM_OPACITY : 1 }}
     >
@@ -191,12 +197,14 @@ export interface MapCanvasProps {
   layout: LayoutResult
   analysis: Analysis
   isArchLevel: boolean
+  isFilesLevel: boolean
   viewBox: ViewBox
   selectedId: string | null
   /** Set of module IDs that match the active search; null means no active search. */
   matchingIds: Set<string> | null
   svgRef: React.RefObject<SVGSVGElement>
   onNodeClick: (id: string) => void
+  onNodeDoubleClick: (id: string) => void
   onNodeHover: (id: string | null) => void
   onBackgroundClick: () => void
   onMouseDown: (e: React.MouseEvent<SVGSVGElement>) => void
@@ -208,11 +216,13 @@ export function MapCanvas({
   layout,
   analysis,
   isArchLevel,
+  isFilesLevel,
   viewBox,
   selectedId,
   matchingIds,
   svgRef,
   onNodeClick,
+  onNodeDoubleClick,
   onNodeHover,
   onBackgroundClick,
   onMouseDown,
@@ -224,7 +234,7 @@ export function MapCanvas({
   const glowId = `glow-${uid}`
 
   const { nodes, edges } = layout
-  const { modules, risks } = analysis
+  const { modules, risks, files } = analysis
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
   const vbStr = `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
@@ -259,12 +269,13 @@ export function MapCanvas({
           <GraphNode
             key={node.id}
             node={node}
-            score={scoreFor(node.id, modules, isArchLevel)}
+            score={scoreFor(node.id, modules, isArchLevel, files, isFilesLevel)}
             glow={glowFor(node.id, risks, isArchLevel)}
             glowId={glowId}
             selected={node.id === selectedId}
             dimmed={dimFor(node.id, matchingIds, isArchLevel)}
             onClick={onNodeClick}
+            onDoubleClick={onNodeDoubleClick}
             onHover={onNodeHover}
           />
         ))}

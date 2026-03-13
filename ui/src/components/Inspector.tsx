@@ -115,17 +115,24 @@ function FindingRow({ risk, repoName, rootPath, isWindows }: FindingRowProps) {
 interface FileRowProps {
   file: File
   onNavigate: (id: string, level: ZoomLevel) => void
+  repoName: string | null
+  rootPath: string | null
+  isWindows: boolean
 }
 
-function FileRow({ file, onNavigate }: FileRowProps) {
+function FileRow({ file, onNavigate, repoName, rootPath, isWindows }: FileRowProps) {
   const dotColor = complexityColor(file.risk_score)
+  const ghUrl = repoName ? githubUrl(repoName, file.path) : null
+  const vsUrl = rootPath
+    ? vscodeUrl(isWindows ? `${rootPath}\\${file.path.replace(/\//g, '\\')}` : `${rootPath}/${file.path}`)
+    : null
   return (
     <div
       onClick={() => onNavigate(file.path, 3)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(file.path, 3) } }}
-      className="flex items-center gap-2 py-[5px] border-b border-panel text-[11px] font-mono cursor-pointer"
+      className="flex items-center gap-2 py-3 border-b border-panel text-[1.25rem] font-mono cursor-pointer hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
     >
       <span
         className="w-2 h-2 rounded-full shrink-0"
@@ -140,6 +147,8 @@ function FileRow({ file, onNavigate }: FileRowProps) {
       >
         {Math.round(file.risk_score * 100)}
       </span>
+      {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
+      {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
     </div>
   )
 }
@@ -154,7 +163,7 @@ function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNav
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(id, 3) } }}
-      className="text-[11px] font-mono text-link py-1 border-b border-panel cursor-pointer underline decoration-border-subtle"
+      className="text-[11px] font-mono text-link py-1 border-b border-panel cursor-pointer underline decoration-border-subtle hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
     >
       {prefix} {id}
     </div>
@@ -165,7 +174,7 @@ function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNav
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] font-bold text-text-dim uppercase tracking-[0.08em] pt-3 pb-1.5 border-b border-border-subtle mb-0.5">
+    <div className="text-[1.25rem] font-bold text-text-dim uppercase tracking-[0.08em] pt-3 pb-1.5 border-b border-border-subtle mb-0.5">
       {children}
     </div>
   )
@@ -174,7 +183,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 // ── Inspector ─────────────────────────────────────────────────────────────────
 
 export interface InspectorProps {
-  selectedId: string
+  selectedId: string | null
   analysis: Analysis
   onClose: () => void
   onNavigate: (id: string, level: ZoomLevel) => void
@@ -194,6 +203,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
 
   // Determine whether the selection is a module or a file.
   const { selectedFile, module } = useMemo(() => {
+    if (selectedId === null) return { selectedFile: null, module: null }
     const sf = files.find((f) => f.path === selectedId) ?? null
     const mod = sf
       ? modules.find((m) => m.id === sf.module) ?? null
@@ -203,28 +213,30 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
 
   const displayedRisks = useMemo(
     () =>
-      risks
-        .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
-        .sort((a, b) => {
-          const order = { high: 0, medium: 1, low: 2 }
-          return (order[a.severity as keyof typeof order] ?? 3) -
-            (order[b.severity as keyof typeof order] ?? 3)
-        }),
+      selectedId === null
+        ? []
+        : risks
+            .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
+            .sort((a, b) => {
+              const order = { high: 0, medium: 1, low: 2 }
+              return (order[a.severity as keyof typeof order] ?? 3) -
+                (order[b.severity as keyof typeof order] ?? 3)
+            }),
     [risks, selectedFile, selectedId],
   )
 
   // Files table: shown only when viewing a module (not a file).
   const moduleFiles = useMemo(
-    () => selectedFile ? [] : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score),
+    () => (selectedId === null || selectedFile) ? [] : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score),
     [selectedFile, files, selectedId],
   )
 
   const imports = useMemo(
-    () => selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to),
+    () => (selectedId === null || selectedFile) ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to),
     [selectedFile, dependencies, selectedId],
   )
   const importedBy = useMemo(
-    () => selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from),
+    () => (selectedId === null || selectedFile) ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from),
     [selectedFile, dependencies, selectedId],
   )
 
@@ -238,19 +250,23 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
   }, [onClose])
 
   return (
-    <div className="absolute top-0 right-0 bottom-0 w-[360px] bg-canvas border-l border-border-subtle flex flex-col z-[100] overflow-hidden">
+    <div className="absolute top-0 right-0 bottom-0 w-[360px] bg-canvas border-l border-border-subtle flex flex-col z-[100] overflow-hidden [box-shadow:var(--shadow-panel)]">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border-subtle flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-bold text-text-primary font-mono break-all">
-            {selectedFile ? selectedFile.path.split('/').pop() : selectedId}
+            {selectedId === null
+              ? 'Inspector'
+              : selectedFile
+                ? selectedFile.path.split('/').pop()
+                : selectedId}
           </div>
           {selectedFile && (
             <div className="text-[11px] text-text-dim mt-0.5 font-mono">
               {selectedFile.path}
             </div>
           )}
-          {selectedFile ? (
+          {selectedId !== null && selectedFile ? (
             <div className="text-[11px] text-text-muted mt-1 flex gap-2.5 flex-wrap">
               <span>
                 Risk{' '}
@@ -265,13 +281,13 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(module.id, 3) } }}
-                  className="text-link cursor-pointer underline decoration-border-subtle"
+                  className="text-link cursor-pointer underline decoration-border-subtle hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
                 >
                   in {module.id}
                 </span>
               )}
             </div>
-          ) : module && (
+          ) : selectedId !== null && module ? (
             <div className="text-[11px] text-text-muted mt-1 flex gap-2.5">
               <span>
                 Risk{' '}
@@ -287,7 +303,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
               </span>
               <span>{module.file_count} files</span>
             </div>
-          )}
+          ) : null}
         </div>
         <button
           onClick={onClose}
@@ -300,59 +316,74 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {/* Findings */}
-        <SectionHeader>
-          Findings ({displayedRisks.length})
-        </SectionHeader>
-        {displayedRisks.length === 0 ? (
-          <div className="text-border-subtle text-[11px] py-2">
-            No findings
+        {selectedId === null ? (
+          <div className="text-text-dim text-[11px] py-4">
+            Select a node to inspect
           </div>
         ) : (
-          displayedRisks.map((r) => (
-            <FindingRow
-              key={r.id}
-              risk={r}
-              repoName={githubSlug}
-              rootPath={rootPath}
-              isWindows={isWindows}
-            />
-          ))
-        )}
-
-        {/* Dependencies */}
-        {imports.length > 0 && (
           <>
-            <SectionHeader>Imports ({imports.length})</SectionHeader>
-            {imports.map((id) => (
-              <NavItem key={id} id={id} prefix="→" onNavigate={onNavigate} />
-            ))}
-          </>
-        )}
-
-        {importedBy.length > 0 && (
-          <>
-            <SectionHeader>Imported by ({importedBy.length})</SectionHeader>
-            {importedBy.map((id) => (
-              <NavItem key={id} id={id} prefix="←" onNavigate={onNavigate} />
-            ))}
-          </>
-        )}
-
-        {/* Files */}
-        {moduleFiles.length > 0 && (
-          <>
+            {/* Findings */}
             <SectionHeader>
-              Files — sorted by risk
+              Findings ({displayedRisks.length})
             </SectionHeader>
-            <div className="flex text-[10px] text-border-subtle py-1 gap-2">
-              <span className="flex-1">name</span>
-              <span className="w-9">LOC</span>
-              <span className="w-9 text-right">risk</span>
-            </div>
-            {moduleFiles.map((f) => (
-              <FileRow key={f.path} file={f} onNavigate={onNavigate} />
-            ))}
+            {displayedRisks.length === 0 ? (
+              <div className="text-border-subtle text-[11px] py-2">
+                No findings
+              </div>
+            ) : (
+              displayedRisks.map((r) => (
+                <FindingRow
+                  key={r.id}
+                  risk={r}
+                  repoName={githubSlug}
+                  rootPath={rootPath}
+                  isWindows={isWindows}
+                />
+              ))
+            )}
+
+            {/* Dependencies */}
+            {imports.length > 0 && (
+              <>
+                <SectionHeader>Imports ({imports.length})</SectionHeader>
+                {imports.map((id) => (
+                  <NavItem key={id} id={id} prefix="→" onNavigate={onNavigate} />
+                ))}
+              </>
+            )}
+
+            {importedBy.length > 0 && (
+              <>
+                <SectionHeader>Imported by ({importedBy.length})</SectionHeader>
+                {importedBy.map((id) => (
+                  <NavItem key={id} id={id} prefix="←" onNavigate={onNavigate} />
+                ))}
+              </>
+            )}
+
+            {/* Files */}
+            {moduleFiles.length > 0 && (
+              <>
+                <SectionHeader>
+                  Files — sorted by risk
+                </SectionHeader>
+                <div className="flex text-[10px] text-border-subtle py-1 gap-2">
+                  <span className="flex-1">name</span>
+                  <span className="w-9">LOC</span>
+                  <span className="w-9 text-right">risk</span>
+                </div>
+                {moduleFiles.map((f) => (
+                  <FileRow
+                    key={f.path}
+                    file={f}
+                    onNavigate={onNavigate}
+                    repoName={githubSlug}
+                    rootPath={rootPath}
+                    isWindows={isWindows}
+                  />
+                ))}
+              </>
+            )}
           </>
         )}
       </div>

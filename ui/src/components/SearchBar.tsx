@@ -78,7 +78,7 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
 
   return (
     <div
-      className="absolute top-[2em] left-1/2 -translate-x-1/2 z-50 w-[340px]"
+      className="absolute top-8 left-1/2 -translate-x-1/2 z-50 w-[340px]"
       onMouseDown={(e) => e.stopPropagation()} // prevent SVG pan starting
     >
       {/* Input */}

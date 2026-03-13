@@ -939,3 +939,32 @@ Next: Phase UI-6 — visual refinements (activation tab, inspector shadow, singl
 
 EOF
 
+
+---
+date: 2026-03-13T12:40:18-0400
+hash: rBqhKK8Fru7ebDM7IlI6NJSumULAxs7mnzqoym4gs/s=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 00bf0e74865c677c4173471d8ca1da3dcd9a50b5
+---
+
+Phase UI-6: UI refinements implemented on branch phase-ui-6.
+
+Note: PR #24 (phase-ui-6-css) was merged into fix-inspector-deeplinks instead of main. Resolved by merging commit a7bc124 into phase-ui-6 branch — no conflicts since the two branch tips had identical file trees.
+
+Changes:
+- useAppNav: select() uses replaceState (selection is in-memory, no history entry); selectAndZoom still pushes history for zoom transitions
+- layered.ts: computeLayout/layoutFiles accept optional availableWidth; z=3 COLS constrained to fit; scoreFor handles file nodes at z=3 using risk_score
+- MapCanvas: isFilesLevel prop; onNodeDoubleClick prop; file nodes at z=3 coloured by risk_score; hover glow via stroke color change
+- App.tsx: inspectorOpen + layoutAvailableWidth state; single-click selects (no zoom), double-click navigates; activation tab at right edge (z>=2); inspector shows on inspectorOpen; background click closes inspector; layout uses availableWidth when inspector open at navigation time
+- Inspector: selectedId: string|null; empty state; FileRow gets gh/vs links + larger touch target (py-3) + text-[1.25rem]; panel left shadow; NavItem/FileRow hover glows; SectionHeader text-[1.25rem]
+- StatusBar: horizontal layout with fixed-width tabs bottom-left, info row right; shadow-based depth; text-[1.25rem] tabs, text-[1rem] info
+- SearchBar: top-8 (32px, ~2em)
+- index.css: added --shadow-glow-neutral/high/med tokens
+
+Coderabbit findings: both false positives (Escape useEffect present, files always File[]).
+All gates: ESLint clean, Vitest 64/64, Go tests all pass, vite build success.
+Branch: phase-ui-6
+
+EOF
+

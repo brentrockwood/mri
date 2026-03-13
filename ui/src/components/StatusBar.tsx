@@ -29,18 +29,18 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div className="bg-panel border-t border-border-subtle shrink-0">
-      {/* Tab row */}
-      <div className="flex items-stretch">
+    <div className="bg-panel border-t border-border-subtle shrink-0 flex items-end gap-4 px-4 pb-3">
+      {/* Tab strip - fixed-width tabs, bottom-left */}
+      <div className="flex items-end gap-1 shrink-0">
         {LEVELS.map((l) => (
           <button
             key={l}
             onClick={() => onLevelChange(l)}
             className={cn(
-              'flex-1 px-1 pt-[10px] pb-2 border-t-2 font-mono text-xs cursor-pointer transition-colors duration-150',
+              'px-6 py-2 font-mono text-[1.25rem] cursor-pointer border border-border-subtle rounded-t-[4px] transition-colors duration-150',
               l === level
-                ? 'border-blue-500 bg-canvas text-text-primary'
-                : 'border-transparent bg-transparent text-text-muted',
+                ? 'bg-canvas text-text-primary shadow-[var(--shadow-tab-active)] [border-bottom-color:var(--color-canvas)]'
+                : 'bg-panel text-text-muted shadow-[var(--shadow-tab-inactive)] hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)]',
             )}
           >
             {LEVEL_LABELS[l]}
@@ -48,8 +48,8 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
         ))}
       </div>
 
-      {/* Info row */}
-      <div className="flex items-center gap-[10px] px-4 pb-[14px] pt-1 text-[11px] font-mono text-text-dim flex-wrap">
+      {/* Info row - to the right of tabs */}
+      <div className="flex-1 flex items-center gap-[10px] pb-1 text-[1rem] font-mono text-text-dim flex-wrap">
         {/* Breadcrumb */}
         <span>
           {crumbs.map((crumb, i) => (
