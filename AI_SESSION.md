@@ -232,3 +232,32 @@ Fixed two bugs raised post-PR-#25:
 All gates pass: gosec 0, goimports clean, go vet clean, go test -race all pass, go build, Vitest 64/64, ESLint clean.
 
 ---
+
+## [2026-03-13T15:18:00-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `d7d5d5c` | **sha256**: `b4bde64b7fa6`
+
+I have merged Phase UI-6. Proceed with Phase 7.
+
+---
+
+## [2026-03-13T16:22:40-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `d08bad2` | **sha256**: `7615d1c47b78`
+
+I see the file nodes. I don't see any edges between them.
+
+---
+
+## [2026-03-13T16:53:54-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `c5284c2` | **sha256**: `5ea14c780ab0`
+
+Session summary for phase-ui-6. Three features implemented:
+
+1. Phase Modules-JS: package.json-aware JS/TS module detection. findJSProjectRoots() walks for non-root package.json dirs. moduleID() checks project roots first for TS/JS, falls back to directory-level. Result: ui module = 26 files (was 8 fragmented modules).
+
+2. File-level dependency edges (schema 1.3): FileDep type added to schema. Ingestion resolves relative JS/TS imports to file paths (extension probe). layoutFiles() builds edges from file deps filtered to current module. 44 file-level deps on mri repo; edges now visible at zoom 3.
+
+3. Prior session (phase-ui-6 earlier): double-click text selection fix (e.preventDefault), TypeScript directory-level module granularity, relative import resolution.
+
+All gates clean. PR to be opened for architectural review.
+
+---

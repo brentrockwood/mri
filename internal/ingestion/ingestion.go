@@ -6,6 +6,7 @@ package ingestion
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -65,13 +66,15 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		return nil, fmt.Errorf("ingestion ingest: no code files found in %s", source)
 	}
 
+	jsProjectRoots := findJSProjectRoots(root)
+
 	// Build module map: top-level subdirectory name → module.
 	// Files directly in root get module ID "root".
 	moduleFiles := map[string][]FileInfo{}
 	moduleLang := map[string]map[string]int{} // module → language → count
 
 	for _, fi := range files {
-		mod := moduleID(fi.Path, fi.Language)
+		mod := moduleID(fi.Path, fi.Language, jsProjectRoots)
 		moduleFiles[mod] = append(moduleFiles[mod], fi)
 		if moduleLang[mod] == nil {
 			moduleLang[mod] = map[string]int{}
@@ -107,12 +110,19 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		moduleSet[m.ID] = true
 	}
 
-	depSet := map[string]bool{} // "from→to" dedup key
+	fileSet := map[string]bool{}
+	for _, fi := range files {
+		fileSet[fi.Path] = true
+	}
+
+	depSet := map[string]bool{}     // "from→to" dedup key for module deps
+	fileDepSet := map[string]bool{} // dedup key for file deps
 	var dependencies []schema.Dependency
+	var fileDeps []schema.FileDep
 	var schemaFiles []schema.File
 
 	for _, fi := range files {
-		mod := moduleID(fi.Path, fi.Language)
+		mod := moduleID(fi.Path, fi.Language, jsProjectRoots)
 
 		schemaFiles = append(schemaFiles, schema.File{
 			Path:     fi.Path,
@@ -136,6 +146,20 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 				candidate := path.Dir(path.Clean(path.Join(fileDir, imp)))
 				if moduleSet[candidate] {
 					toMod = candidate
+				}
+
+				// Also attempt file-level resolution (try with and without extension).
+				base := path.Clean(path.Join(fileDir, imp))
+				for _, ext := range []string{"", ".ts", ".tsx", ".js", ".jsx"} {
+					candidateFile := base + ext
+					if fileSet[candidateFile] && candidateFile != fi.Path {
+						key := fi.Path + "→" + candidateFile
+						if !fileDepSet[key] {
+							fileDepSet[key] = true
+							fileDeps = append(fileDeps, schema.FileDep{From: fi.Path, To: candidateFile})
+						}
+						break
+					}
 				}
 			} else {
 				toMod = importToModule(imp, moduleSet)
@@ -163,6 +187,12 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 			return dependencies[i].From < dependencies[j].From
 		}
 		return dependencies[i].To < dependencies[j].To
+	})
+	sort.Slice(fileDeps, func(i, j int) bool {
+		if fileDeps[i].From != fileDeps[j].From {
+			return fileDeps[i].From < fileDeps[j].From
+		}
+		return fileDeps[i].To < fileDeps[j].To
 	})
 
 	repoName := filepath.Base(root)
@@ -205,6 +235,7 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		Dependencies: dependencies,
 		Risks:        []schema.Risk{},
 		Files:        schemaFiles,
+		FileDeps:     fileDeps,
 	}
 
 	return &Result{
@@ -222,13 +253,28 @@ func isRemoteURL(source string) bool {
 }
 
 // moduleID returns the module ID for a file at the given relative path.
-// For Go, TypeScript, and JavaScript files, the module ID is the repo-relative
-// directory path (e.g. "ui/src/components"), giving directory-level granularity.
+// For Go files, the module ID is the repo-relative directory path (directory-level granularity).
+// For TypeScript and JavaScript files, if the file lives under a JS project root
+// (a directory containing a non-root package.json), the project root directory is returned.
+// Otherwise TS/JS falls back to directory-level granularity.
 // For all other languages the top-level directory heuristic is used.
 // Files directly in the repo root get module ID "root".
-func moduleID(relPath, language string) string {
+func moduleID(relPath, language string, jsProjectRoots []string) string {
 	slashPath := filepath.ToSlash(relPath)
-	if language == "go" || language == "typescript" || language == "javascript" {
+	if language == "go" {
+		idx := strings.LastIndex(slashPath, "/")
+		if idx == -1 {
+			return "root"
+		}
+		return slashPath[:idx]
+	}
+	if language == "typescript" || language == "javascript" {
+		for _, proj := range jsProjectRoots {
+			if strings.HasPrefix(slashPath, proj+"/") {
+				return proj
+			}
+		}
+		// Fallback: directory-level granularity.
 		idx := strings.LastIndex(slashPath, "/")
 		if idx == -1 {
 			return "root"
@@ -240,6 +286,35 @@ func moduleID(relPath, language string) string {
 		return "root"
 	}
 	return slashPath[:idx]
+}
+
+// findJSProjectRoots walks the tree and returns repo-relative slash paths of
+// directories that contain a package.json (excluding the repo root itself).
+// It respects the same skipDirs and hidden-directory rules as the file walker.
+func findJSProjectRoots(root string) []string {
+	var roots []string
+	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			if p != root && (skipDirs[d.Name()] || strings.HasPrefix(d.Name(), ".")) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Name() == "package.json" {
+			dir := filepath.Dir(p)
+			if dir == root {
+				return nil // skip repo-root package.json
+			}
+			if rel, err := filepath.Rel(root, dir); err == nil {
+				roots = append(roots, filepath.ToSlash(rel))
+			}
+		}
+		return nil
+	})
+	return roots
 }
 
 // modulePath returns a display path for the module.

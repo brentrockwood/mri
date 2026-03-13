@@ -1,4 +1,4 @@
-import type { Dependency, File, Module } from '../types/analysis'
+import type { Dependency, FileDep, File, Module } from '../types/analysis'
 import type { LayoutEdge, LayoutNode, LayoutResult, ZoomLevel } from './types'
 
 // ── Layout constants ──────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ function layoutArchitecture(modules: Module[], dependencies: Dependency[]): Layo
 
 // ── Level 3: Files ────────────────────────────────────────────────────────────
 
-function layoutFiles(files: File[], selectedModuleId: string, availableWidth?: number): LayoutResult {
+function layoutFiles(files: File[], fileDeps: FileDep[] | undefined, selectedModuleId: string, availableWidth?: number): LayoutResult {
   const moduleFiles = files
     .filter((f) => f.module === selectedModuleId)
     .sort((a, b) => b.risk_score - a.risk_score)
@@ -195,7 +195,14 @@ function layoutFiles(files: File[], selectedModuleId: string, availableWidth?: n
   const canvasWidth = CANVAS_PAD * 2 + cols * (NODE_MAX_W + H_GAP) - H_GAP
   const canvasHeight = CANVAS_PAD * 2 + rows * (NODE_H + V_GAP) - V_GAP
 
-  return { nodes, edges: [], canvasWidth, canvasHeight }
+  const fileIds = new Set(moduleFiles.map((f) => f.path))
+  const edges = aggregateEdges(
+    (fileDeps ?? [])
+      .filter((d) => fileIds.has(d.from) && fileIds.has(d.to))
+      .map((d) => ({ ...d, type: 'import' })),
+  )
+
+  return { nodes, edges, canvasWidth, canvasHeight }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -218,6 +225,7 @@ export function computeLayout(
   modules: Module[],
   dependencies: Dependency[],
   files: File[],
+  fileDeps: FileDep[] | undefined,
   zoomLevel: ZoomLevel,
   selectedId: string | null,
   availableWidth?: number,
@@ -232,7 +240,7 @@ export function computeLayout(
       // If selectedId is a file path, use its parent module for the layout.
       const fileEntry = files.find((f) => f.path === selectedId)
       const moduleId = fileEntry ? fileEntry.module : selectedId
-      return layoutFiles(files, moduleId, availableWidth)
+      return layoutFiles(files, fileDeps, moduleId, availableWidth)
     }
   }
 }

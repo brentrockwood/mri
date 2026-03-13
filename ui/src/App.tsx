@@ -25,8 +25,8 @@ export function App() {
   const [layoutAvailableWidth, setLayoutAvailableWidth] = useState<number | undefined>(undefined)
 
   const layout = useMemo(
-    () => computeLayout(analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId, layoutAvailableWidth),
-    [analysis.modules, analysis.dependencies, analysis.files, zoomLevel, selectedId, layoutAvailableWidth],
+    () => computeLayout(analysis.modules, analysis.dependencies, analysis.files, analysis.file_deps, zoomLevel, selectedId, layoutAvailableWidth),
+    [analysis.modules, analysis.dependencies, analysis.files, analysis.file_deps, zoomLevel, selectedId, layoutAvailableWidth],
   )
 
   const zoom = useZoom(layout.canvasWidth, layout.canvasHeight)

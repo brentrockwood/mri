@@ -1004,3 +1004,60 @@ Gates: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 iss
 
 EOF
 
+
+---
+date: 2026-03-13T15:18:10-0400
+hash: 16XaSgQbD3JldVu/HiTkkLBjaflIanFXfeDjhYH6BSg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d7d5d5c81a5d7926202089ead383a828245117ef
+---
+
+Phase Modules-JS: Implemented package.json-aware JS/TS module detection in internal/ingestion/ingestion.go.
+
+Added findJSProjectRoots() which walks the tree for non-root package.json files (respecting skipDirs). Updated moduleID() signature to accept jsProjectRoots []string — TS/JS files under a project root now collapse to that root; falls back to directory-level granularity when no package.json found. Wired into Ingest(). Added "io/fs" import.
+
+Tests: Updated TestModuleID to pass jsProjectRoots param and added project-root grouping cases. Added TestIngest_TSProjectRootGrouping (temp repo with ui/package.json, verifies all 4 TS files → module "ui", no intra-module deps recorded).
+
+Verified on mri repo: `ui` module now shows 26 files (was 8 fragmented modules). All gates clean: gosec 0 issues, goimports clean, go vet clean, go test -race pass, go build pass, 64 Vitest pass, ESLint clean.
+
+Branch: phase-ui-6
+
+EOF
+
+
+---
+date: 2026-03-13T16:22:51-0400
+hash: 46yi/2UdpXgohyN6/fRdGsTMP484gSInQQgkBzTsZmg=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: d08bad232daedf0146f516eec45c0b6152ff075f
+---
+
+Phase File-Deps: Added file-to-file dependency edges at the files level (zoom 3).
+
+Schema bumped to 1.3. Added FileDep struct (Go) / FileDep interface (TS) and file_deps field to Analysis. Ingestion builds fileSet then resolves relative JS/TS imports to specific file paths (trying "", .ts, .tsx, .js, .jsx extensions). Layout layoutFiles() now accepts fileDeps, filters to intra-module pairs, builds edges via aggregateEdges. computeLayout signature updated; App.tsx passes analysis.file_deps.
+
+Result on mri repo: 44 file-level deps detected (all ui/**). Edges now visible at zoom 3. All gates clean: gosec 0, goimports clean, go vet, go build, go test -race pass, 64 Vitest pass, ESLint clean.
+
+Branch: phase-ui-6
+
+EOF
+
+
+---
+date: 2026-03-13T16:53:41-0400
+hash: QvCDiQgHlBow/oVqioCP1KakjD4KyPRulso8dYwwDk8=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: c5284c2fa5d45ea85f9d95d746ba327e606772fe
+---
+
+Next steps discussed before architectural review. Branch: phase-ui-6.
+
+Proposed: npm-audit pass — a new analysis pass (not ingestion) that shells out to `npm audit --json` for each JS project root found by findJSProjectRoots(). Maps npm severities (critical/high → high, moderate → medium, low/info → low) to schema.Risk entries. Module = JS project root module (e.g. "ui"), file = package.json path. Non-fatal if npm unavailable — adds "npm-audit" to skipped_passes. No flag needed; runs by default for any repo with a package.json. Govulncheck for Go deps is a natural companion pass.
+
+User is seeking architectural review from other models before committing to next steps. PR incoming on phase-ui-6.
+
+EOF
+

@@ -87,21 +87,21 @@ describe('computeLayout — Level 2 (Modules)', () => {
   ]
 
   it('assigns depth-0 nodes a smaller y than depth-1 nodes', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     const schemaY = layout.nodes.find((n) => n.id === 'schema')!.y
     const analysisY = layout.nodes.find((n) => n.id === 'internal/analysis')!.y
     expect(schemaY).toBeLessThan(analysisY)
   })
 
   it('assigns the same y to siblings at the same depth', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     const analysisY = layout.nodes.find((n) => n.id === 'internal/analysis')!.y
     const ingestionY = layout.nodes.find((n) => n.id === 'internal/ingestion')!.y
     expect(analysisY).toBe(ingestionY)
   })
 
   it('orders siblings left-to-right lexicographically', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     const analysisX = layout.nodes.find((n) => n.id === 'internal/analysis')!.x
     const ingestionX = layout.nodes.find((n) => n.id === 'internal/ingestion')!.x
     // 'analysis' < 'ingestion' lexicographically → analysis is further left
@@ -109,19 +109,19 @@ describe('computeLayout — Level 2 (Modules)', () => {
   })
 
   it('sizes nodes proportionally to file_count', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     const bigW = layout.nodes.find((n) => n.id === 'internal/analysis')!.width // file_count: 5
     const smallW = layout.nodes.find((n) => n.id === 'cmd/repo-mri')!.width // file_count: 1
     expect(bigW).toBeGreaterThan(smallW)
   })
 
   it('produces edges from dependencies', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     expect(layout.edges).toHaveLength(2)
   })
 
   it('returns positive canvas dimensions', () => {
-    const layout = computeLayout(modules, deps, [], 2, null)
+    const layout = computeLayout(modules, deps, [], undefined, 2, null)
     expect(layout.canvasWidth).toBeGreaterThan(0)
     expect(layout.canvasHeight).toBeGreaterThan(0)
   })
@@ -139,7 +139,7 @@ describe('computeLayout — Level 1 (Architecture)', () => {
   const deps: Dependency[] = [{ from: 'cmd/repo-mri', to: 'internal/analysis', type: 'import' }]
 
   it('collapses modules to their top-level segment', () => {
-    const layout = computeLayout(modules, deps, [], 1, null)
+    const layout = computeLayout(modules, deps, [], undefined, 1, null)
     const ids = layout.nodes.map((n) => n.id)
     expect(ids).toContain('internal')
     expect(ids).toContain('cmd')
@@ -148,13 +148,13 @@ describe('computeLayout — Level 1 (Architecture)', () => {
   })
 
   it('orders segments lexicographically', () => {
-    const layout = computeLayout(modules, deps, [], 1, null)
+    const layout = computeLayout(modules, deps, [], undefined, 1, null)
     const ids = layout.nodes.map((n) => n.id)
     expect(ids).toEqual([...ids].sort())
   })
 
   it('produces cross-segment edges only', () => {
-    const layout = computeLayout(modules, deps, [], 1, null)
+    const layout = computeLayout(modules, deps, [], undefined, 1, null)
     expect(layout.edges).toHaveLength(1)
     expect(layout.edges[0].fromId).toBe('cmd')
     expect(layout.edges[0].toId).toBe('internal')

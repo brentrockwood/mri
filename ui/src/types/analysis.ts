@@ -1,5 +1,5 @@
 /**
- * TypeScript mirror of schema/analysis.go (schema version 1.2).
+ * TypeScript mirror of schema/analysis.go (schema version 1.3).
  * Keep in sync when the CLI schema version changes.
  */
 
@@ -11,6 +11,7 @@ export interface Analysis {
   dependencies: Dependency[]
   risks: Risk[]
   files: File[]
+  file_deps?: FileDep[]
   subsystems?: Subsystem[]
 }
 
@@ -60,6 +61,12 @@ export interface Dependency {
   from: string
   to: string
   type: string
+}
+
+/** Directed import relationship between individual files. */
+export interface FileDep {
+  from: string
+  to: string
 }
 
 /** Single finding from an analysis pass. */
