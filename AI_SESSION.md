@@ -205,3 +205,10 @@ Completed Phase UI-6-css per project.md spec. Installed @tailwindcss/vite, estab
 Check that main is up to date with the latest PR#24. Then proceed with Phase UI-6.
 
 ---
+
+## [2026-03-13T12:40:37-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `21f7401` | **sha256**: `44109ed54edb`
+
+Phase UI-6 complete. Merged phase-ui-6-css Tailwind work (PR #24 had wrong base branch). Implemented: activation tab, single/double-click interaction model, inspector empty state + FileRow deep links, status bar redesign, file node risk colouring, hover glows, 2em search bar margin. All gates pass.
+
+---
