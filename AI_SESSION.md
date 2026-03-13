@@ -134,3 +134,29 @@ gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -ra
 phase-ui-3-interaction
 
 ---
+
+## [2026-03-13T01:46:24-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `8c31328` | **sha256**: `e3d5b95ccddb`
+
+## Phase UI-3a Session Summary
+
+### Work completed
+
+**Phase UI-3a: URL hash routing for browser back/forward and deep links**
+
+- `project/project.md`: Added Phase UI-3a spec; updated coding standards to list `useAppNav` as the navigation side-effect hook
+- `ui/src/hooks/useAppNav.ts`: `parseHash`, `buildHash` pure functions + `useAppNav` hook. Reads initial state from `window.location.hash`, pushes history on navigation, restores state on `popstate`. Hash format `#z=<level>&s=<encoded-id>`. Safe on `file://` URLs.
+- `ui/src/hooks/useAppNav.test.ts`: 13 tests — parseHash, buildHash, round-trips, edge cases, history integration
+- `ui/src/App.tsx`: replaced `useSelection` + `useState(zoomLevel)` with `useAppNav`
+
+### Post-phase reviews
+- CodeRabbit: no findings
+- MRI tool: 0 static findings (AI passes skipped — low API credit)
+
+### Gate results
+gosec (0), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success), Vitest 49/49, ESLint clean.
+
+### Branch
+phase-ui-3a-app-deep-links
+
+---
