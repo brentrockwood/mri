@@ -1081,3 +1081,44 @@ PR #26 open for architectural review before Phase 8 begins.
 
 EOF
 
+
+---
+date: 2026-03-13T18:37:33-0400
+hash: MUGu6I7L5nQxn4r/pougQ7C5Ar+HOvIP5XZJGdQOVv0=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 79fbd5d137545fd73c46735444bb23d95573e7a4
+---
+
+Starting Phase 8 - Dep-Audit. Branch: phase-8-dep-audit. Will implement JS/TS dependency vulnerability audit via npm audit and Go vulnerability audit via govulncheck. Results emitted as schema.Risk entries with type "dep-vuln". No UI changes this phase.
+
+EOF
+
+
+---
+date: 2026-03-13T18:41:59-0400
+hash: 7ESLdisz8m2dl5ruUTZ8LaD+HFZEe6NrnyhBGimOfPY=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 79fbd5d137545fd73c46735444bb23d95573e7a4
+---
+
+Phase 8 - Dep-Audit complete. Branch: phase-8-dep-audit.
+
+Created internal/depaudit package with three files:
+- depaudit.go: Audit() entry point combining JS and Go passes
+- js.go: npm audit integration; parses v7+ (auditReportVersion:2) and v6 (advisories) JSON formats; severity mapping: critical/high→high, moderate→medium, low/info→low
+- go_vuln.go: govulncheck integration; parses newline-delimited JSON stream; deduplicates by OSV ID; all govulncheck findings rated high
+
+Both passes are non-fatal: if tool unavailable the pass name is added to skipped_passes. Go pass silently skips if no go.sum present.
+
+Added JSProjectRoots []string to ingestion.Result so main.go can pass roots to depaudit without recomputing.
+
+Wired depaudit.Audit() into cmd/repo-mri/main.go after analysis.Analyze() and before AI passes. Risks appended directly to result.Analysis.Risks; skipped passes merged into meta.SkippedPasses.
+
+9 new test functions in internal/depaudit/depaudit_test.go covering: severity mapping, npm v2/v1/empty/invalid JSON parsing, govulncheck JSON parsing (dedup, fixed version, no findings, malformed lines), auditGo skip when no go.sum, auditJS skip when no project roots, govulncheck skipped_passes when binary absent.
+
+All 70 tests pass (was 64). golangci-lint clean. No UI changes this phase.
+
+EOF
+

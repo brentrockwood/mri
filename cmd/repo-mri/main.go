@@ -15,6 +15,7 @@ import (
 
 	"github.com/brentrockwood/mri/internal/aggregation"
 	"github.com/brentrockwood/mri/internal/analysis"
+	"github.com/brentrockwood/mri/internal/depaudit"
 	"github.com/brentrockwood/mri/internal/ingestion"
 	"github.com/brentrockwood/mri/internal/providers"
 	"github.com/brentrockwood/mri/internal/report"
@@ -86,6 +87,17 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 
 	if err := analysis.Analyze(ctx, result.RootDir, &result.Analysis); err != nil {
 		return fmt.Errorf("analyze: static analysis: %w", err)
+	}
+
+	if err = ctx.Err(); err != nil {
+		return fmt.Errorf("analyze: %w", err)
+	}
+
+	// Run dependency vulnerability audit (non-fatal; skipped passes recorded in meta).
+	depRisks, depSkipped := depaudit.Audit(ctx, result.RootDir, result.JSProjectRoots)
+	result.Analysis.Risks = append(result.Analysis.Risks, depRisks...)
+	if len(depSkipped) > 0 {
+		result.Analysis.Meta.SkippedPasses = append(result.Analysis.Meta.SkippedPasses, depSkipped...)
 	}
 
 	if err = ctx.Err(); err != nil {

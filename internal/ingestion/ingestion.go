@@ -26,6 +26,9 @@ type Result struct {
 	Cleanup func()
 	// Analysis is the partially-populated analysis (no risks yet).
 	Analysis schema.Analysis
+	// JSProjectRoots is the list of repo-relative slash paths of directories
+	// that contain a non-root package.json, as detected by findJSProjectRoots.
+	JSProjectRoots []string
 }
 
 // Ingest runs the full ingestion pipeline for the given source.
@@ -239,9 +242,10 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	}
 
 	return &Result{
-		RootDir:  root,
-		Cleanup:  cleanup,
-		Analysis: analysis,
+		RootDir:        root,
+		Cleanup:        cleanup,
+		Analysis:       analysis,
+		JSProjectRoots: jsProjectRoots,
 	}, nil
 }
 
