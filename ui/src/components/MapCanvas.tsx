@@ -107,7 +107,7 @@ function GraphNode({ node, score, glow, glowId, selected, onClick, onHover }: No
   const strokeWidth = selected ? 2.5 : 1.5
   return (
     <g
-      onClick={() => onClick(id)}
+      onClick={(e) => { e.stopPropagation(); onClick(id) }}
       onMouseEnter={() => onHover(id)}
       onMouseLeave={() => onHover(null)}
       style={{ cursor: 'pointer' }}
@@ -176,6 +176,7 @@ export interface MapCanvasProps {
   svgRef: React.RefObject<SVGSVGElement>
   onNodeClick: (id: string) => void
   onNodeHover: (id: string | null) => void
+  onBackgroundClick: () => void
   onMouseDown: (e: React.MouseEvent<SVGSVGElement>) => void
   onMouseMove: (e: React.MouseEvent<SVGSVGElement>) => void
   onMouseUp: () => void
@@ -190,6 +191,7 @@ export function MapCanvas({
   svgRef,
   onNodeClick,
   onNodeHover,
+  onBackgroundClick,
   onMouseDown,
   onMouseMove,
   onMouseUp,
@@ -209,6 +211,7 @@ export function MapCanvas({
       ref={svgRef}
       viewBox={vbStr}
       style={{ display: 'block', width: '100%', height: '100%', background: '#0f172a' }}
+      onClick={onBackgroundClick}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}

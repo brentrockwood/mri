@@ -772,3 +772,65 @@ Branch: phase-ui-2-graph-layout-rendering
 
 EOF
 
+
+---
+date: 2026-03-13T00:55:10-0400
+hash: LWTXDSlrvU2SUFvmjB6hrQI7by3hbPjnZhUyYnPtrTM=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 6e78dc77c04335d9f6585ba0e521ff058fe6bb32
+---
+
+Phase UI-3: Interaction layer implemented.
+
+New components and library:
+- ui/src/lib/deeplinks.ts: githubUrl, vscodeUrl (Unix double-slash / Windows drive-letter), detectWindowsPaths, copyToClipboard
+- ui/src/lib/deeplinks.test.ts: 13 tests covering all URL generation cases and path detection
+- ui/src/components/Tooltip.tsx: hover overlay for Level-2 module nodes — shows file count, LOC, complexity band, severity counts
+- ui/src/components/Inspector.tsx: right-side detail panel — findings list (sorted by severity with GitHub/VS Code deep links + clipboard copy), import/imported-by lists, file table sorted by risk score
+
+Updated:
+- ui/src/components/MapCanvas.tsx: added onBackgroundClick prop; GraphNode calls e.stopPropagation() before forwarding click so SVG background click correctly deselects
+- ui/src/App.tsx: wired hoveredId state + mousePos for Tooltip, handleBackgroundClick for deselect, Inspector rendered as absolute overlay, handleMouseMove combines pan + position tracking
+- ui/fixtures/analysis.json: enriched with 2 more risks and 2 more files for internal/analysis to give Inspector meaningful content during dev
+
+All 36 Vitest tests pass. ESLint clean. Vite build produces 160 kB single-file HTML.
+
+Branch: phase-ui-3-interaction
+
+EOF
+
+
+---
+date: 2026-03-13T01:10:00-0400
+hash: uTK85XbkmJb3eHWLBqFUwRGOLEA9KAPR523p9X3f1MA=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: a39a3f778498443b4e511b5a652646f234f66a3d
+---
+
+Post-phase-UI-3 reviews complete.
+
+CodeRabbit finding: false positive against stale .repo-mri/report.md (report from before risk_001 ctx-cancellation fix). Root cause: .repo-mri/ was not gitignored. Fixed by adding .repo-mri/ to .gitignore so generated analysis output is never committed. New MRI tool run confirms 0 findings, health score 100/100.
+
+MRI tool finding: 0 findings on current codebase.
+
+Branch: phase-ui-3-interaction
+
+EOF
+
+
+---
+date: 2026-03-13T01:20:25-0400
+hash: AjkIwoJcV/vy+WEYcp1ucwvAfqF0pIRuBAJd6pAcHN0=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: a42dc4730bdc13617f97812d5e939b38cf5770ec
+---
+
+Phase UI-3 send 'er gate complete. All checks pass: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (clean), go test -race (all pass), go build (success), Vitest 36/36, ESLint clean.
+
+Branch: phase-ui-3-interaction
+
+EOF
+
