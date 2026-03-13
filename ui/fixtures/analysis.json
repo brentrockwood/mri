@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "schema_version": "1.2",
+    "cli_version": "0.1.0",
+    "analysis_duration_ms": 1234
+  },
+  "repo": {
+    "name": "test-repo",
+    "languages": ["Go"],
+    "file_count": 5,
+    "module_count": 2,
+    "analysis_time": "2026-03-12T00:00:00Z"
+  },
+  "modules": [
+    {
+      "id": "internal/analysis",
+      "path": "internal/analysis",
+      "language": "Go",
+      "file_count": 3,
+      "risk_score": 0.4,
+      "complexity_score": 0.5,
+      "import_count": 2
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "cmd/repo-mri",
+      "to": "internal/analysis",
+      "type": "import"
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-1",
+      "severity": "high",
+      "type": "complexity",
+      "pass": "static",
+      "module": "internal/analysis",
+      "file": "internal/analysis/analyzer.go",
+      "title": "High complexity",
+      "description": "This file has high cyclomatic complexity.",
+      "confidence": 0.9,
+      "evidence_lines": [42],
+      "target_type": "file",
+      "target_id": "internal/analysis/analyzer.go"
+    }
+  ],
+  "files": [
+    {
+      "path": "internal/analysis/analyzer.go",
+      "module": "internal/analysis",
+      "language": "Go",
+      "lines": 200,
+      "size": 5000,
+      "complexity": 12.5,
+      "risk_score": 0.8
+    }
+  ]
+}

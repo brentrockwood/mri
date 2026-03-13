@@ -84,3 +84,11 @@ notes/
 docs/_build/
 target/
 bin/
+internal/report/static/
+
+# ============================================================
+# UI
+# ============================================================
+ui/dist/
+ui/package-lock.json
+ui/*.tsbuildinfo

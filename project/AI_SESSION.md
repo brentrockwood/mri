@@ -370,3 +370,17 @@ Post-review: 0 tool findings (preamble effective), 0 CodeRabbit findings.
 send 'er gate: gosec 0, go vet clean, golangci-lint clean, go test -race all pass, go build clean.
 
 ---
+
+## [2026-03-12T23:19:28-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `2faf2a8` | **sha256**: `07010b2a0310`
+
+Proceed with Phase 1.
+
+---
+
+## [2026-03-12T23:25:48-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `2faf2a8` | **sha256**: `6ab52a5f7871`
+
+Phase UI-1 complete. Scaffolded ui/ directory with Vite + React 18 + TypeScript + vite-plugin-singlefile. All lint, format, tests pass (4/4). vite build produces single self-contained report.html. make ui-build and make ui-dev added to root Makefile.
+
+---
