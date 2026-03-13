@@ -985,3 +985,22 @@ MapCanvas: hover now uses feDropShadow blue-white glow filter (hoverGlowId) inst
 
 EOF
 
+
+---
+date: 2026-03-13T14:28:41-0400
+hash: ifyyVzFKJdS5/5O4YJFK8BMONs0y1I1htE8bc2cUiOo=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 2d40a08a676e055d7d31c611cf42f249fb4cd335
+---
+
+send 'er: all gates passed. Simplify fixes applied before push. Branch: phase-ui-6
+
+Simplify fixes:
+- App.tsx: extracted duplicate newWidth calc before conditional in handleNodeDoubleClick; wrapped tooltipModuleId in useMemo
+- Inspector.tsx: moved SEVERITY_ORDER object to module scope (was recreated in useMemo each run); memoized isWindows path scan with useMemo
+
+Gates: gosec (0 issues), goimports (clean), go vet (clean), golangci-lint (0 issues), go test -race all pass, go build success, Vitest 64/64, ESLint clean.
+
+EOF
+

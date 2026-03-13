@@ -59,12 +59,11 @@ export function App() {
 
   const handleNodeDoubleClick = useCallback((id: string) => {
     setSearchQuery('')
+    const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
     if (zoomLevel === 1) {
-      const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
       setLayoutAvailableWidth(newWidth)
       selectAndZoom(null, 2)
     } else if (zoomLevel === 2) {
-      const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
       setLayoutAvailableWidth(newWidth)
       navigateTo(id, 3)
       setInspectorOpen(true)
@@ -125,13 +124,16 @@ export function App() {
   }, [select])
 
   // Show tooltip only for Level-2 module nodes while inspector is not open
-  const tooltipModuleId =
-    hoveredId !== null &&
-    zoomLevel === 2 &&
-    !inspectorOpen &&
-    analysis.modules.some((m) => m.id === hoveredId)
-      ? hoveredId
-      : null
+  const tooltipModuleId = useMemo(
+    () =>
+      hoveredId !== null &&
+      zoomLevel === 2 &&
+      !inspectorOpen &&
+      analysis.modules.some((m) => m.id === hoveredId)
+        ? hoveredId
+        : null,
+    [hoveredId, zoomLevel, inspectorOpen, analysis.modules],
+  )
 
   const matchingIds = useMemo(
     () => matchingModuleIds(searchQuery, analysis),

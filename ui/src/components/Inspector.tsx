@@ -7,6 +7,8 @@ import { cn } from '../lib/cn'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
 function confidencePct(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
 }
@@ -197,7 +199,7 @@ export interface InspectorProps {
 export function Inspector({ selectedId, analysis, onClose, onNavigate }: InspectorProps) {
   const { modules, risks, files, dependencies, repo, meta } = analysis
 
-  const isWindows = detectWindowsPaths(files.map((f) => f.path))
+  const isWindows = useMemo(() => detectWindowsPaths(files.map((f) => f.path)), [files])
   const githubSlug = repo.github_slug ?? null
   const rootPath = meta.root_path ?? null
 
@@ -217,11 +219,9 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
         ? []
         : risks
             .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
-            .sort((a, b) => {
-              const order = { high: 0, medium: 1, low: 2 }
-              return (order[a.severity as keyof typeof order] ?? 3) -
-                (order[b.severity as keyof typeof order] ?? 3)
-            }),
+            .sort((a, b) =>
+              (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
+            ),
     [risks, selectedFile, selectedId],
   )
 

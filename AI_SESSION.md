@@ -212,3 +212,10 @@ Check that main is up to date with the latest PR#24. Then proceed with Phase UI-
 Phase UI-6 complete. Merged phase-ui-6-css Tailwind work (PR #24 had wrong base branch). Implemented: activation tab, single/double-click interaction model, inspector empty state + FileRow deep links, status bar redesign, file node risk colouring, hover glows, 2em search bar margin. All gates pass.
 
 ---
+
+## [2026-03-13T14:28:45-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `2d40a08` | **sha256**: `687a08127f2a`
+
+send 'er: Phase UI-6 complete. Simplify: extracted newWidth, memoized tooltipModuleId + isWindows, module-scoped SEVERITY_ORDER. All gates: gosec 0, goimports clean, go vet clean, golangci-lint 0, go test -race all pass, go build, Vitest 64/64, ESLint clean.
+
+---
