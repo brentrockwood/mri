@@ -219,3 +219,16 @@ Phase UI-6 complete. Merged phase-ui-6-css Tailwind work (PR #24 had wrong base 
 send 'er: Phase UI-6 complete. Simplify: extracted newWidth, memoized tooltipModuleId + isWindows, module-scoped SEVERITY_ORDER. All gates: gosec 0, goimports clean, go vet clean, golangci-lint 0, go test -race all pass, go build, Vitest 64/64, ESLint clean.
 
 ---
+
+## [2026-03-13T14:38:04-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f54b0dd` | **sha256**: `4cb847bf40ca`
+
+Fixed two bugs raised post-PR-#25:
+
+1. Double-click text selection (minor): Added e.preventDefault() to GraphNode onDoubleClick handler in MapCanvas.tsx to suppress browser's native text-selection behavior on double-click.
+
+2. TypeScript module granularity (major): moduleID() now uses strings.LastIndex (full directory path) for typescript and javascript, matching Go's package-level granularity. Added relative import resolution in the ingestion loop: ../lib/risk from ui/src/components/Inspector.tsx resolves to module ui/src/lib so cross-directory TS dependencies are recorded. Added TestIngest_TypeScriptPackageLevelModules integration test and updated TestModuleID.
+
+All gates pass: gosec 0, goimports clean, go vet clean, go test -race all pass, go build, Vitest 64/64, ESLint clean.
+
+---
