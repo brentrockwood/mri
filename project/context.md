@@ -712,3 +712,29 @@ send 'er gate for phase-ui-1-project-skeleton. gosec: 0 issues. goimports: fixed
 
 EOF
 
+
+---
+date: 2026-03-12T23:58:35-0400
+hash: G5x8UwE5pSnJti/aNFRQ65dq0HlVnHFVusZnfSj5H78=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: e445a1fef1f8e5c4ce4be7a46d612fcae781f299
+---
+
+Phase UI-2 complete. Implemented layout/types.ts (LayoutNode/Edge/Result, ZoomLevel), layout/layered.ts (path-hierarchy layout: Level 1 arch segments, Level 2 modules by depth, Level 3 files grid), hooks/useZoom.ts (SVG viewBox pan+scroll-wheel zoom), hooks/useSelection.ts (stub), components/MapCanvas.tsx (SVG renderer: nodes with complexity heatmap, glow filter, arrowhead edges), components/StatusBar.tsx (zoom level buttons + risk counts), lib/risk.ts (hasHighSeverityRisk, complexityColor). Updated App.tsx to wire all components. 23 tests pass (19 layout + 4 useAnalysis). Build: 152KB single file. Branch: phase-ui-2-graph-layout-rendering.
+
+EOF
+
+
+---
+date: 2026-03-13T00:16:35-0400
+hash: dXedkQo8OvwA4TGvFK8i5lkTU3UmTs5eEbZKZfltEew=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: f8e92fd8947735a6ebe6e75e9e49ed9cb4957e06
+---
+
+send 'er gate for phase-ui-2-graph-layout-rendering. gosec: 0. goimports: clean. go vet: clean. golangci-lint: 0 issues. go test -race: all pass. go build: clean. UI lint: clean. UI prettier: clean. UI tests: 23/23. vite build: 152KB. Branch: phase-ui-2-graph-layout-rendering.
+
+EOF
+

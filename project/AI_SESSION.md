@@ -398,3 +398,24 @@ CodeRabbit review (--prompt-only): 0 findings. No changes required. Branch: phas
 send 'er gate passed. gosec: 0. goimports: fixed 2 pre-existing Go test files. go vet/lint/test/build: all clean. UI lint/format/tests: all clean. Added ui/.prettierignore. Branch: phase-ui-1-project-skeleton.
 
 ---
+
+## [2026-03-12T23:49:59-04:00] [prompt] Claude Code / claude-sonnet-4-6
+**git**: `e445a1f` | **sha256**: `ed6f7e5db221`
+
+Merged. Proceed with phase 2.
+
+---
+
+## [2026-03-12T23:58:39-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `e445a1f` | **sha256**: `6ea12c3537b8`
+
+Phase UI-2 complete. Graph layout (path-hierarchy), SVG renderer (MapCanvas), pan/zoom (useZoom), StatusBar with zoom level switching. 23 tests pass. Build: 152KB. Branch: phase-ui-2-graph-layout-rendering.
+
+---
+
+## [2026-03-13T00:16:39-04:00] [summary] Claude Code / claude-sonnet-4-6
+**git**: `f8e92fd` | **sha256**: `bca602eb2d2c`
+
+send 'er gate passed for Phase UI-2. All Go and UI gates clean. 23/23 tests pass. Branch: phase-ui-2-graph-layout-rendering.
+
+---
