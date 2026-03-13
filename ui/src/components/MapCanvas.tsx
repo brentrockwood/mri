@@ -139,7 +139,7 @@ function GraphNode({ node, score, glow, glowId, hoverGlowId, shadowId, selected,
   return (
     <g
       onClick={(e) => { e.stopPropagation(); onClick(id) }}
-      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(id) }}
+      onDoubleClick={(e) => { e.stopPropagation(); e.preventDefault(); onDoubleClick(id) }}
       onMouseEnter={() => { onHover(id); setHovered(true) }}
       onMouseLeave={() => { onHover(null); setHovered(false) }}
       className="cursor-pointer"

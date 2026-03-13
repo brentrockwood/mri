@@ -129,7 +129,17 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		}
 
 		for _, imp := range imps {
-			toMod := importToModule(imp, moduleSet)
+			var toMod string
+			if (fi.Language == "javascript" || fi.Language == "typescript") && strings.HasPrefix(imp, ".") {
+				// Resolve relative import (e.g. "../lib/risk") to its module directory.
+				fileDir := path.Dir(filepath.ToSlash(fi.Path))
+				candidate := path.Dir(path.Clean(path.Join(fileDir, imp)))
+				if moduleSet[candidate] {
+					toMod = candidate
+				}
+			} else {
+				toMod = importToModule(imp, moduleSet)
+			}
 			if toMod == "" || toMod == mod {
 				continue
 			}
@@ -212,13 +222,13 @@ func isRemoteURL(source string) bool {
 }
 
 // moduleID returns the module ID for a file at the given relative path.
-// For Go files, the module ID is the repo-relative directory path
-// (e.g. "internal/analysis"), giving package-level granularity.
-// For all other languages the existing top-level directory heuristic is used.
+// For Go, TypeScript, and JavaScript files, the module ID is the repo-relative
+// directory path (e.g. "ui/src/components"), giving directory-level granularity.
+// For all other languages the top-level directory heuristic is used.
 // Files directly in the repo root get module ID "root".
 func moduleID(relPath, language string) string {
 	slashPath := filepath.ToSlash(relPath)
-	if language == "go" {
+	if language == "go" || language == "typescript" || language == "javascript" {
 		idx := strings.LastIndex(slashPath, "/")
 		if idx == -1 {
 			return "root"

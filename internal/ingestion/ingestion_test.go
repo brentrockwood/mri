@@ -131,16 +131,72 @@ func TestModuleID(t *testing.T) {
 		{"cmd/repo-mri/main.go", "go", "cmd/repo-mri"},
 		{"schema/analysis.go", "go", "schema"},
 		{"main.go", "go", "root"},
-		// Non-Go: top-level directory
+		// Non-Go (except TS/JS): top-level directory
 		{"src/main.py", "python", "src"},
 		{"payments/processor.py", "python", "payments"},
-		{"ui/components/Button.tsx", "typescript", "ui"},
+		// TypeScript and JavaScript: directory-level granularity
+		{"ui/src/components/Button.tsx", "typescript", "ui/src/components"},
+		{"ui/src/lib/risk.ts", "typescript", "ui/src/lib"},
+		{"ui/src/App.tsx", "typescript", "ui/src"},
+		{"src/app.js", "javascript", "src"},
 		{"index.js", "javascript", "root"},
 	}
 	for _, tt := range tests {
 		got := moduleID(tt.relPath, tt.language)
 		if got != tt.want {
 			t.Errorf("moduleID(%q, %q) = %q, want %q", tt.relPath, tt.language, got, tt.want)
+		}
+	}
+}
+
+// TestIngest_TypeScriptPackageLevelModules verifies that TypeScript files are
+// assigned to directory-level modules and that relative imports are resolved to
+// their target module so cross-directory dependencies are recorded.
+func TestIngest_TypeScriptPackageLevelModules(t *testing.T) {
+	root := t.TempDir()
+
+	// ui/src/App.tsx imports from ui/src/components and ui/src/lib
+	writeTestFile(t, root, "ui/src/App.tsx", `
+import { Inspector } from './components/Inspector'
+import { risk } from './lib/risk'
+`)
+	// ui/src/components/Inspector.tsx imports from ui/src/lib
+	writeTestFile(t, root, "ui/src/components/Inspector.tsx", `
+import { risk } from '../lib/risk'
+`)
+	// ui/src/lib/risk.ts — no imports
+	writeTestFile(t, root, "ui/src/lib/risk.ts", `export const risk = 1`)
+
+	result, err := Ingest(context.Background(), root)
+	if err != nil {
+		t.Fatalf("Ingest: %v", err)
+	}
+
+	modIDs := map[string]bool{}
+	for _, m := range result.Analysis.Modules {
+		modIDs[m.ID] = true
+	}
+
+	wantMods := []string{"ui/src", "ui/src/components", "ui/src/lib"}
+	for _, want := range wantMods {
+		if !modIDs[want] {
+			t.Errorf("expected module %q; got %v", want, modIDs)
+		}
+	}
+
+	depSet := map[string]bool{}
+	for _, d := range result.Analysis.Dependencies {
+		depSet[d.From+"→"+d.To] = true
+	}
+
+	wantDeps := []string{
+		"ui/src→ui/src/components",
+		"ui/src→ui/src/lib",
+		"ui/src/components→ui/src/lib",
+	}
+	for _, dep := range wantDeps {
+		if !depSet[dep] {
+			t.Errorf("missing dependency %q; got deps: %v", dep, result.Analysis.Dependencies)
 		}
 	}
 }
