@@ -29,7 +29,7 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div className="bg-panel border-t border-border-strong shrink-0">
+    <div className="bg-panel border-t border-border-subtle shrink-0">
       {/* Tab row */}
       <div className="flex items-stretch">
         {LEVELS.map((l) => (
@@ -54,7 +54,7 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
         <span>
           {crumbs.map((crumb, i) => (
             <span key={`${crumb}-${i}`}>
-              {i > 0 && <span className="mx-1 text-border-strong">›</span>}
+              {i > 0 && <span className="mx-1 text-border-subtle">›</span>}
               <span className={i === crumbs.length - 1 ? 'text-text-secondary' : 'text-text-dim'}>
                 {crumb}
               </span>
@@ -62,7 +62,7 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
           ))}
         </span>
 
-        <span className="text-border-strong">|</span>
+        <span className="text-border-subtle">|</span>
 
         {/* Summary counts */}
         <span>{repo.module_count} modules</span>

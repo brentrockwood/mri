@@ -4,8 +4,8 @@
   /* ── Colour palette ── */
   --color-canvas: #0f172a;
   --color-panel: #1e293b;
-  --color-border-subtle: #475569;
-  --color-border-strong: #334155;
+  --color-border-subtle: #334155;
+  --color-border-strong: #475569;
 
   /* Severity colours */
   --color-risk-high: #f87171;

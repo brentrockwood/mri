@@ -31,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleClick}
       title="Copy path"
       className={cn(
-        'px-1.5 py-px text-[10px] font-mono border border-border-strong rounded-[3px] cursor-pointer shrink-0',
+        'px-1.5 py-px text-[10px] font-mono border border-border-subtle rounded-[3px] cursor-pointer shrink-0',
         copied ? 'bg-green-800 text-green-300' : 'bg-panel text-text-muted',
       )}
     >
@@ -48,7 +48,7 @@ function LinkButton({ href, label }: { href: string; label: string }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="px-1.5 py-px text-[10px] font-mono bg-panel text-blue-400 border border-border-strong rounded-[3px] no-underline shrink-0"
+      className="px-1.5 py-px text-[10px] font-mono bg-panel text-blue-400 border border-border-subtle rounded-[3px] no-underline shrink-0"
     >
       {label}
     </a>
@@ -124,14 +124,14 @@ function FileRow({ file, onNavigate }: FileRowProps) {
       onClick={() => onNavigate(file.path, 3)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onNavigate(file.path, 3)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(file.path, 3) } }}
       className="flex items-center gap-2 py-[5px] border-b border-panel text-[11px] font-mono cursor-pointer"
     >
       <span
         className="w-2 h-2 rounded-full shrink-0"
         style={{ background: dotColor }}
       />
-      <span className="flex-1 text-link overflow-hidden text-ellipsis whitespace-nowrap underline decoration-border-strong">
+      <span className="flex-1 text-link overflow-hidden text-ellipsis whitespace-nowrap underline decoration-border-subtle">
         {file.path.split('/').pop()}
       </span>
       <span className="text-text-dim shrink-0">{file.lines}L</span>
@@ -153,8 +153,8 @@ function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNav
       onClick={() => onNavigate(id, 3)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onNavigate(id, 3)}
-      className="text-[11px] font-mono text-link py-1 border-b border-panel cursor-pointer underline decoration-border-strong"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(id, 3) } }}
+      className="text-[11px] font-mono text-link py-1 border-b border-panel cursor-pointer underline decoration-border-subtle"
     >
       {prefix} {id}
     </div>
@@ -165,7 +165,7 @@ function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNav
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] font-bold text-text-dim uppercase tracking-[0.08em] pt-3 pb-1.5 border-b border-border-strong mb-0.5">
+    <div className="text-[10px] font-bold text-text-dim uppercase tracking-[0.08em] pt-3 pb-1.5 border-b border-border-subtle mb-0.5">
       {children}
     </div>
   )
@@ -238,9 +238,9 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
   }, [onClose])
 
   return (
-    <div className="absolute top-0 right-0 bottom-0 w-[360px] bg-canvas border-l border-border-strong flex flex-col z-[100] overflow-hidden">
+    <div className="absolute top-0 right-0 bottom-0 w-[360px] bg-canvas border-l border-border-subtle flex flex-col z-[100] overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border-strong flex items-start gap-2">
+      <div className="px-4 py-3 border-b border-border-subtle flex items-start gap-2">
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-bold text-text-primary font-mono break-all">
             {selectedFile ? selectedFile.path.split('/').pop() : selectedId}
@@ -264,8 +264,8 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
                   onClick={() => onNavigate(module.id, 3)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && onNavigate(module.id, 3)}
-                  className="text-link cursor-pointer underline decoration-border-strong"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(module.id, 3) } }}
+                  className="text-link cursor-pointer underline decoration-border-subtle"
                 >
                   in {module.id}
                 </span>
@@ -305,7 +305,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
           Findings ({displayedRisks.length})
         </SectionHeader>
         {displayedRisks.length === 0 ? (
-          <div className="text-border-strong text-[11px] py-2">
+          <div className="text-border-subtle text-[11px] py-2">
             No findings
           </div>
         ) : (
@@ -345,7 +345,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
             <SectionHeader>
               Files — sorted by risk
             </SectionHeader>
-            <div className="flex text-[10px] text-border-strong py-1 gap-2">
+            <div className="flex text-[10px] text-border-subtle py-1 gap-2">
               <span className="flex-1">name</span>
               <span className="w-9">LOC</span>
               <span className="w-9 text-right">risk</span>

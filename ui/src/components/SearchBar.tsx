@@ -92,7 +92,7 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search modules, files, findings…"
         className={cn(
-          'w-full py-[7px] px-3 bg-panel border border-border-strong',
+          'w-full py-[7px] px-3 bg-panel border border-border-subtle',
           showDropdown ? 'rounded-t-md' : 'rounded-md',
           'text-text-secondary text-xs font-mono outline-none',
           'shadow-[0_4px_16px_rgba(0,0,0,0.5)]',
@@ -101,7 +101,7 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="bg-panel border border-border-strong border-t-0 rounded-b-md overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
+        <div className="bg-panel border border-border-subtle border-t-0 rounded-b-md overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
           {results.map((hit, i) => (
             <div
               key={hitKey(hit)}
