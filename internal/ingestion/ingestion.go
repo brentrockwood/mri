@@ -168,11 +168,19 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 		}
 	}
 
+	// RootPath is only meaningful for local analyses; for remote repos the
+	// clone lands in a temp directory that has no value to the end user.
+	var rootPath string
+	if !isRemoteURL(source) {
+		rootPath = root
+	}
+
 	analysis := schema.Analysis{
 		Meta: schema.Meta{
 			SchemaVersion:      schema.SchemaVersion,
 			CLIVersion:         schema.CLIVersion,
 			AnalysisDurationMS: time.Since(start).Milliseconds(),
+			RootPath:           rootPath,
 		},
 		Repo: schema.Repo{
 			Name:         repoName,

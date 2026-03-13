@@ -30,6 +30,10 @@ type Meta struct {
 	SkippedPasses      []string `json:"skipped_passes,omitempty"`
 	// MaxChainDepth is the length of the longest module dependency chain. Set by Phase 2.
 	MaxChainDepth int `json:"max_chain_depth,omitempty"`
+	// RootPath is the absolute filesystem path to the repository root.
+	// Populated for local analyses only; empty for remote (GitHub) analyses
+	// where the cloned temp directory is not useful to the end user.
+	RootPath string `json:"root_path,omitempty"`
 }
 
 // Repo holds repository-level summary data.

@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Analysis, File, Risk } from '../types/analysis'
+import type { ZoomLevel } from '../layout/types'
 import { complexityColor } from '../lib/risk'
 import { copyToClipboard, detectWindowsPaths, githubUrl, vscodeUrl } from '../lib/deeplinks'
 
@@ -82,16 +83,21 @@ interface FindingRowProps {
   risk: Risk
   /** Full "owner/repo" GitHub slug; null for local repos (hides the GH link). */
   repoName: string | null
+  /**
+   * Absolute filesystem root of the repo (e.g. "/home/user/project").
+   * When set, VS Code deep links are constructed as root_path + '/' + file.
+   * When absent, the VS Code button is hidden (relative paths are unusable).
+   */
+  rootPath: string | null
   isWindows: boolean
 }
 
-function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
+function FindingRow({ risk, repoName, rootPath, isWindows }: FindingRowProps) {
   const line = risk.evidence_lines?.[0]
   const ghUrl = repoName ? githubUrl(repoName, risk.file, line) : null
-  const vsUrl = vscodeUrl(
-    isWindows ? risk.file : `/${risk.file}`,
-    line,
-  )
+  const vsUrl = rootPath
+    ? vscodeUrl(isWindows ? `${rootPath}\\${risk.file.replace(/\//g, '\\')}` : `${rootPath}/${risk.file}`, line)
+    : null
 
   return (
     <div
@@ -163,7 +169,7 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
           {line !== undefined ? `:${line}` : ''}
         </span>
         {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
-        <LinkButton href={vsUrl} label="vs" />
+        {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
         <CopyButton text={risk.file} />
       </div>
     </div>
@@ -172,10 +178,19 @@ function FindingRow({ risk, repoName, isWindows }: FindingRowProps) {
 
 // ── FileRow ───────────────────────────────────────────────────────────────────
 
-function FileRow({ file }: { file: File }) {
+interface FileRowProps {
+  file: File
+  onNavigate: (id: string, level: ZoomLevel) => void
+}
+
+function FileRow({ file, onNavigate }: FileRowProps) {
   const dotColor = complexityColor(file.risk_score)
   return (
     <div
+      onClick={() => onNavigate(file.path, 3)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate(file.path, 3)}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -184,6 +199,7 @@ function FileRow({ file }: { file: File }) {
         borderBottom: '1px solid #1e293b',
         fontSize: 11,
         fontFamily: 'monospace',
+        cursor: 'pointer',
       }}
     >
       <span
@@ -198,10 +214,12 @@ function FileRow({ file }: { file: File }) {
       <span
         style={{
           flex: 1,
-          color: '#cbd5e1',
+          color: '#93c5fd',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          textDecoration: 'underline',
+          textDecorationColor: '#334155',
         }}
       >
         {file.path.split('/').pop()}
@@ -217,6 +235,32 @@ function FileRow({ file }: { file: File }) {
       >
         {Math.round(file.risk_score * 100)}
       </span>
+    </div>
+  )
+}
+
+// ── NavItem ───────────────────────────────────────────────────────────────────
+
+/** Clickable row used for imports and imported-by lists. */
+function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNavigate: (id: string, level: ZoomLevel) => void }) {
+  return (
+    <div
+      onClick={() => onNavigate(id, 3)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onNavigate(id, 3)}
+      style={{
+        fontSize: 11,
+        fontFamily: 'monospace',
+        color: '#93c5fd',
+        padding: '4px 0',
+        borderBottom: '1px solid #1e293b',
+        cursor: 'pointer',
+        textDecoration: 'underline',
+        textDecorationColor: '#334155',
+      }}
+    >
+      {prefix} {id}
     </div>
   )
 }
@@ -248,17 +292,20 @@ export interface InspectorProps {
   selectedId: string
   analysis: Analysis
   onClose: () => void
+  onNavigate: (id: string, level: ZoomLevel) => void
 }
 
 /**
- * Right-side detail panel shown when a module node is selected.
- * Displays findings, dependency list, and file table for the selected module.
+ * Right-side detail panel shown when a module node or file is selected.
+ * Displays findings, dependency list, and file table.
+ * Items in the dependency and file lists are clickable for navigation.
  */
-export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
-  const { modules, risks, files, dependencies, repo } = analysis
+export function Inspector({ selectedId, analysis, onClose, onNavigate }: InspectorProps) {
+  const { modules, risks, files, dependencies, repo, meta } = analysis
 
   const isWindows = detectWindowsPaths(files.map((f) => f.path))
   const githubSlug = repo.github_slug ?? null
+  const rootPath = meta.root_path ?? null
 
   // Determine whether the selection is a module or a file.
   const selectedFile = files.find((f) => f.path === selectedId) ?? null
@@ -281,6 +328,15 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
 
   const imports = selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to)
   const importedBy = selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from)
+
+  // Close on Escape key.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   return (
     <div
@@ -326,7 +382,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
             </div>
           )}
           {selectedFile ? (
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 10 }}>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span>
                 Risk{' '}
                 <span style={{ color: severityColor(selectedFile.risk_score >= 0.7 ? 'high' : selectedFile.risk_score >= 0.4 ? 'medium' : 'low') }}>
@@ -334,7 +390,17 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
                 </span>
               </span>
               <span style={{ color: '#cbd5e1' }}>{selectedFile.lines}L</span>
-              {module && <span>in {module.id}</span>}
+              {module && (
+                <span
+                  onClick={() => onNavigate(module.id, 3)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && onNavigate(module.id, 3)}
+                  style={{ color: '#93c5fd', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: '#334155' }}
+                >
+                  in {module.id}
+                </span>
+              )}
             </div>
           ) : module && (
             <div
@@ -412,6 +478,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               key={r.id}
               risk={r}
               repoName={githubSlug}
+              rootPath={rootPath}
               isWindows={isWindows}
             />
           ))
@@ -422,18 +489,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
           <>
             <SectionHeader>Imports ({imports.length})</SectionHeader>
             {imports.map((id) => (
-              <div
-                key={id}
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#94a3b8',
-                  padding: '4px 0',
-                  borderBottom: '1px solid #1e293b',
-                }}
-              >
-                → {id}
-              </div>
+              <NavItem key={id} id={id} prefix="→" onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -442,18 +498,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
           <>
             <SectionHeader>Imported by ({importedBy.length})</SectionHeader>
             {importedBy.map((id) => (
-              <div
-                key={id}
-                style={{
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: '#94a3b8',
-                  padding: '4px 0',
-                  borderBottom: '1px solid #1e293b',
-                }}
-              >
-                ← {id}
-              </div>
+              <NavItem key={id} id={id} prefix="←" onNavigate={onNavigate} />
             ))}
           </>
         )}
@@ -478,7 +523,7 @@ export function Inspector({ selectedId, analysis, onClose }: InspectorProps) {
               <span style={{ width: 36, textAlign: 'right' }}>risk</span>
             </div>
             {moduleFiles.map((f) => (
-              <FileRow key={f.path} file={f} />
+              <FileRow key={f.path} file={f} onNavigate={onNavigate} />
             ))}
           </>
         )}

@@ -27,6 +27,8 @@ export interface AppNavState {
   selectedId: string | null
   setZoomLevel: (level: ZoomLevel) => void
   select: (id: string | null) => void
+  /** Atomically sets both zoom level and selection in a single history push. */
+  selectAndZoom: (id: string | null, level: ZoomLevel) => void
 }
 
 /**
@@ -69,5 +71,13 @@ export function useAppNav(): AppNavState {
     })
   }, [])
 
-  return { zoomLevel, selectedId, setZoomLevel, select }
+  const selectAndZoom = useCallback((id: string | null, level: ZoomLevel) => {
+    setNav(() => {
+      const next = { zoomLevel: level, selectedId: id }
+      history.pushState(next, '', buildHash(level, id))
+      return next
+    })
+  }, [])
+
+  return { zoomLevel, selectedId, setZoomLevel, select, selectAndZoom }
 }

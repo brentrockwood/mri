@@ -79,6 +79,11 @@ import _ "github.com/test/repo/internal/ingestion"
 			t.Errorf("missing dependency %q; got deps: %v", dep, result.Analysis.Dependencies)
 		}
 	}
+
+	// Local analysis should populate RootPath with the absolute repo root.
+	if result.Analysis.Meta.RootPath != root {
+		t.Errorf("RootPath: got %q, want %q", result.Analysis.Meta.RootPath, root)
+	}
 }
 
 // TestIngest_NonGoTopLevelModules verifies that non-Go repos continue to use

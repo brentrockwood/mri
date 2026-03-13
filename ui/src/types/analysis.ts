@@ -24,6 +24,12 @@ export interface Meta {
   skipped_passes?: string[]
   /** Length of the longest module dependency chain. Set by Phase 2. */
   max_chain_depth?: number
+  /**
+   * Absolute filesystem path to the repository root.
+   * Set for local analyses only; absent for remote (GitHub) analyses.
+   * Required to construct working VS Code deep links.
+   */
+  root_path?: string
 }
 
 /** Repository-level summary data. */

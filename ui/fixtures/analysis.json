@@ -2,16 +2,28 @@
   "meta": {
     "schema_version": "1.2",
     "cli_version": "0.1.0",
-    "analysis_duration_ms": 1234
+    "analysis_duration_ms": 1234,
+    "root_path": "/home/user/project"
   },
   "repo": {
     "name": "test-repo",
-    "languages": ["Go"],
+    "languages": [
+      "Go"
+    ],
     "file_count": 5,
     "module_count": 2,
     "analysis_time": "2026-03-12T00:00:00Z"
   },
   "modules": [
+    {
+      "id": "cmd/repo-mri",
+      "path": "cmd/repo-mri",
+      "language": "Go",
+      "file_count": 2,
+      "risk_score": 0.2,
+      "complexity_score": 0.3,
+      "import_count": 0
+    },
     {
       "id": "internal/analysis",
       "path": "internal/analysis",
@@ -45,7 +57,9 @@
       "title": "High complexity",
       "description": "This file has high cyclomatic complexity.",
       "confidence": 0.9,
-      "evidence_lines": [42],
+      "evidence_lines": [
+        42
+      ],
       "target_type": "file",
       "target_id": "internal/analysis/analyzer.go"
     },
@@ -59,7 +73,9 @@
       "title": "Error swallowed",
       "description": "Only the first file-read error is returned; subsequent errors are silently dropped.",
       "confidence": 0.85,
-      "evidence_lines": [137],
+      "evidence_lines": [
+        137
+      ],
       "target_type": "file",
       "target_id": "internal/analysis/passes.go"
     },
@@ -78,6 +94,24 @@
     }
   ],
   "files": [
+    {
+      "path": "cmd/repo-mri/main.go",
+      "module": "cmd/repo-mri",
+      "language": "Go",
+      "lines": 120,
+      "size": 3200,
+      "complexity": 4.1,
+      "risk_score": 0.2
+    },
+    {
+      "path": "cmd/repo-mri/flags.go",
+      "module": "cmd/repo-mri",
+      "language": "Go",
+      "lines": 55,
+      "size": 1400,
+      "complexity": 1.8,
+      "risk_score": 0.1
+    },
     {
       "path": "internal/analysis/analyzer.go",
       "module": "internal/analysis",
