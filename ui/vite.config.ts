@@ -3,6 +3,7 @@ import { dirname, resolve } from 'path'
 import { readFileSync } from 'fs'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import type { Plugin } from 'vite'
 
@@ -23,7 +24,7 @@ function mriDevDataPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), viteSingleFile(), mriDevDataPlugin()],
+  plugins: [tailwindcss(), react(), viteSingleFile(), mriDevDataPlugin()],
   test: {
     environment: 'jsdom',
     globals: true,
