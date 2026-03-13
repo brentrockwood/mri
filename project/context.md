@@ -772,3 +772,31 @@ Branch: phase-ui-2-graph-layout-rendering
 
 EOF
 
+
+---
+date: 2026-03-13T00:55:10-0400
+hash: LWTXDSlrvU2SUFvmjB6hrQI7by3hbPjnZhUyYnPtrTM=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 6e78dc77c04335d9f6585ba0e521ff058fe6bb32
+---
+
+Phase UI-3: Interaction layer implemented.
+
+New components and library:
+- ui/src/lib/deeplinks.ts: githubUrl, vscodeUrl (Unix double-slash / Windows drive-letter), detectWindowsPaths, copyToClipboard
+- ui/src/lib/deeplinks.test.ts: 13 tests covering all URL generation cases and path detection
+- ui/src/components/Tooltip.tsx: hover overlay for Level-2 module nodes — shows file count, LOC, complexity band, severity counts
+- ui/src/components/Inspector.tsx: right-side detail panel — findings list (sorted by severity with GitHub/VS Code deep links + clipboard copy), import/imported-by lists, file table sorted by risk score
+
+Updated:
+- ui/src/components/MapCanvas.tsx: added onBackgroundClick prop; GraphNode calls e.stopPropagation() before forwarding click so SVG background click correctly deselects
+- ui/src/App.tsx: wired hoveredId state + mousePos for Tooltip, handleBackgroundClick for deselect, Inspector rendered as absolute overlay, handleMouseMove combines pan + position tracking
+- ui/fixtures/analysis.json: enriched with 2 more risks and 2 more files for internal/analysis to give Inspector meaningful content during dev
+
+All 36 Vitest tests pass. ESLint clean. Vite build produces 160 kB single-file HTML.
+
+Branch: phase-ui-3-interaction
+
+EOF
+
