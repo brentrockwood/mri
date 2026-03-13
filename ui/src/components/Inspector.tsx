@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Analysis, File, Risk } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
-import { complexityColor } from '../lib/risk'
+import { complexityColor, riskSeverity } from '../lib/risk'
 import { copyToClipboard, detectWindowsPaths, githubUrl, vscodeUrl } from '../lib/deeplinks'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ function FileRow({ file, onNavigate }: FileRowProps) {
       <span style={{ color: '#475569', flexShrink: 0 }}>{file.lines}L</span>
       <span
         style={{
-          color: severityColor(file.risk_score >= 0.7 ? 'high' : file.risk_score >= 0.4 ? 'medium' : 'low'),
+          color: severityColor(riskSeverity(file.risk_score)),
           flexShrink: 0,
           width: 36,
           textAlign: 'right',
@@ -308,26 +308,40 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
   const rootPath = meta.root_path ?? null
 
   // Determine whether the selection is a module or a file.
-  const selectedFile = files.find((f) => f.path === selectedId) ?? null
-  const module = selectedFile
-    ? modules.find((m) => m.id === selectedFile.module) ?? null
-    : modules.find((m) => m.id === selectedId) ?? null
+  const { selectedFile, module } = useMemo(() => {
+    const sf = files.find((f) => f.path === selectedId) ?? null
+    const mod = sf
+      ? modules.find((m) => m.id === sf.module) ?? null
+      : modules.find((m) => m.id === selectedId) ?? null
+    return { selectedFile: sf, module: mod }
+  }, [selectedId, files, modules])
 
-  const displayedRisks = risks
-    .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
-    .sort((a, b) => {
-      const order = { high: 0, medium: 1, low: 2 }
-      return (order[a.severity as keyof typeof order] ?? 3) -
-        (order[b.severity as keyof typeof order] ?? 3)
-    })
+  const displayedRisks = useMemo(
+    () =>
+      risks
+        .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
+        .sort((a, b) => {
+          const order = { high: 0, medium: 1, low: 2 }
+          return (order[a.severity as keyof typeof order] ?? 3) -
+            (order[b.severity as keyof typeof order] ?? 3)
+        }),
+    [risks, selectedFile, selectedId],
+  )
 
   // Files table: shown only when viewing a module (not a file).
-  const moduleFiles = selectedFile
-    ? []
-    : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score)
+  const moduleFiles = useMemo(
+    () => selectedFile ? [] : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score),
+    [selectedFile, files, selectedId],
+  )
 
-  const imports = selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to)
-  const importedBy = selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from)
+  const imports = useMemo(
+    () => selectedFile ? [] : dependencies.filter((d) => d.from === selectedId).map((d) => d.to),
+    [selectedFile, dependencies, selectedId],
+  )
+  const importedBy = useMemo(
+    () => selectedFile ? [] : dependencies.filter((d) => d.to === selectedId).map((d) => d.from),
+    [selectedFile, dependencies, selectedId],
+  )
 
   // Close on Escape key.
   useEffect(() => {
@@ -385,7 +399,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span>
                 Risk{' '}
-                <span style={{ color: severityColor(selectedFile.risk_score >= 0.7 ? 'high' : selectedFile.risk_score >= 0.4 ? 'medium' : 'low') }}>
+                <span style={{ color: severityColor(riskSeverity(selectedFile.risk_score)) }}>
                   {Math.round(selectedFile.risk_score * 100)}
                 </span>
               </span>
@@ -415,15 +429,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
               <span>
                 Risk{' '}
                 <span
-                  style={{
-                    color: severityColor(
-                      module.risk_score >= 0.7
-                        ? 'high'
-                        : module.risk_score >= 0.4
-                          ? 'medium'
-                          : 'low',
-                    ),
-                  }}
+                  style={{ color: severityColor(riskSeverity(module.risk_score)) }}
                 >
                   {Math.round(module.risk_score * 100)}
                 </span>

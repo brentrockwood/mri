@@ -40,13 +40,18 @@ export function App() {
     setPendingCenterId(null)
   }, [layout, pendingCenterId, centerOn])
 
+  /** Navigate to an id+level and queue centering. Used for all click/search/inspector nav. */
+  const navigateTo = useCallback((id: string, level: ZoomLevel) => {
+    selectAndZoom(id, level)
+    setPendingCenterId(id)
+  }, [selectAndZoom])
+
   // Clicking a node: single history push combining selection + zoom change.
   function handleNodeClick(id: string) {
     setSearchQuery('')
     if (zoomLevel === 2) {
       // Module node at modules level → drill into files view.
-      selectAndZoom(id, 3)
-      setPendingCenterId(id)
+      navigateTo(id, 3)
     } else if (zoomLevel === 1) {
       // Arch node → go to modules level (no selection needed at arch level).
       selectAndZoom(null, 2)
@@ -59,16 +64,12 @@ export function App() {
   function handleSearchSelect(hit: SearchHit) {
     setSearchQuery('')
     if (hit.kind === 'file') {
-      // Navigate to the specific file: z=3, select the file path.
-      selectAndZoom(hit.path, 3)
-      setPendingCenterId(hit.path)
+      navigateTo(hit.path, 3)
     } else if (hit.kind === 'module') {
-      selectAndZoom(hit.id, 3)
-      setPendingCenterId(hit.id)
+      navigateTo(hit.id, 3)
     } else {
       // Finding: navigate to its module at z=3.
-      selectAndZoom(hit.moduleId, 3)
-      setPendingCenterId(hit.moduleId)
+      navigateTo(hit.moduleId, 3)
     }
   }
 
@@ -90,12 +91,6 @@ export function App() {
       // z=3: keep existing selection
       selectAndZoom(selectedId, 3)
     }
-  }
-
-  /** Inspector navigation: navigate to any module or file with a single push. */
-  function handleInspectorNavigate(id: string, level: ZoomLevel) {
-    selectAndZoom(id, level)
-    setPendingCenterId(id)
   }
 
   const handleMouseMove = useCallback(
@@ -169,7 +164,7 @@ export function App() {
             selectedId={selectedId}
             analysis={analysis}
             onClose={() => select(null)}
-            onNavigate={handleInspectorNavigate}
+            onNavigate={navigateTo}
           />
         )}
 
