@@ -92,3 +92,8 @@ internal/report/static/
 ui/dist/
 ui/package-lock.json
 ui/*.tsbuildinfo
+
+# ============================================================
+# MRI analysis output — generated artifacts, not source
+# ============================================================
+.repo-mri/
