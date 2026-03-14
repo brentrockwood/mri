@@ -119,7 +119,7 @@ export const theme = createTheme({
           color: '#cbd5e1',
         },
         head: {
-          fontSize: '0.625rem',
+          fontSize: '0.75rem',
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: '#475569',
@@ -132,7 +132,7 @@ export const theme = createTheme({
         root: {
           '&:hover': {
             boxShadow: '0 0 8px rgba(147,197,253,0.3)',
-            cursor: 'pointer',
+            // cursor is set per-row by the component; not every row is interactive
           },
         },
       },

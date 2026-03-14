@@ -79,6 +79,8 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
   )
 
   const showDropdown = open && query.trim().length > 0 && results.length > 0
+  const listboxId = 'mri-search-listbox'
+  const activeOptionId = showDropdown ? `mri-search-option-${activeIndex}` : undefined
 
   return (
     <Box
@@ -95,6 +97,14 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search modules, files, findings…"
+        inputProps={{
+          role: 'combobox',
+          'aria-expanded': showDropdown,
+          'aria-controls': listboxId,
+          'aria-activedescendant': activeOptionId,
+          'aria-autocomplete': 'list',
+          'aria-label': 'Search modules, files, findings',
+        }}
         sx={{
           '& .MuiOutlinedInput-root': {
             borderBottomLeftRadius: showDropdown ? 0 : undefined,
@@ -117,10 +127,13 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
             borderTop: 'none',
           }}
         >
-          <List disablePadding>
+          <List id={listboxId} role="listbox" disablePadding aria-label="Search results">
             {results.map((hit, i) => (
               <ListItemButton
                 key={hitKey(hit)}
+                id={`mri-search-option-${i}`}
+                role="option"
+                aria-selected={i === activeIndex}
                 selected={i === activeIndex}
                 onMouseDown={() => handleSelect(hit)}
                 dense

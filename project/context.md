@@ -1230,3 +1230,16 @@ Phase 10 - MUI Migration: replaced hand-rolled Tailwind components with Material
 
 EOF
 
+
+---
+date: 2026-03-14T08:10:16-0400
+hash: +4j6oNhXruU/KR/HiTZTcQF3G749qL0NkYWbryZlslI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 217d9100380ef5e2de83a6468ffc1da89efd0fe8
+---
+
+CodeRabbit + repo-mri review of Phase 10 MUI commit. Fixed 3 findings: (1) removed global cursor:pointer from MuiTableRow theme override (only interactive rows should signal pointer); (2) increased thead font size from 0.625rem to 0.75rem for accessibility; (3) added ARIA combobox pattern to SearchBar (role=combobox, aria-expanded, aria-controls, aria-activedescendant, listbox/option roles on dropdown). Added 19 component tests across 4 new test files (Tooltip, StatusBar, SearchBar, Inspector) plus shared testFixture.ts. Two skipped findings: esbuild vuln (requires Vite 8, dev-server-only, out of scope); curl-pipe-bash in .devcontainer/postCreate.sh (pre-existing, confidence 0.3, not actionable). Total tests: 83/83 passing. Branch: phase-10-mui.
+
+EOF
+
