@@ -1175,3 +1175,32 @@ All 84 Go tests pass (was 70). golangci-lint clean.
 
 EOF
 
+
+---
+date: 2026-03-13T20:09:17-0400
+hash: CFbvJcygaw1BYAC8l0YBuc78DnWi0Xds0NJtlCV/gZk=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 17b6e6eee97f4e2b338a9bef7d44f4f9237af4c0
+---
+
+End of session. Branch: phase-8-dep-audit. All work committed.
+
+Phases completed this session:
+- Phase 8 (Dep-Audit): npm audit + govulncheck passes in internal/depaudit
+- Phase 9 (Static Analysis): semgrep + trufflehog passes in internal/staticanalysis
+- CodeRabbit review: 7/9 findings fixed (2 were project.md which user handled)
+
+Open items before Phase 10:
+- Vite 5→6 + Vitest 2→3 upgrade (deferred to Phase 10 prep; MUI 6 targets Vite 6 anyway; vulns are moderate/dev-only)
+- .devcontainer/postCreate.sh curl-pipe-bash: user will address in upcoming postCreate.sh update
+- govulncheck not installed; add to dev-deps or make dev-deps once needed
+
+Next: Phase 10 (Material UI migration). Branch from phase-8-dep-audit or from main after send 'er. Prep step: Vite 5→6 + Vitest 2→3 upgrade first.
+
+Product north star recorded in memory: video game quality visualization at Kubernetes scale; layers model (Risk/Size/Complexity/Coupling); Figma/CAD/Maps interaction; AI secondary to deterministic tools.
+
+84 Go tests pass. golangci-lint clean. TypeScript clean.
+
+EOF
+
