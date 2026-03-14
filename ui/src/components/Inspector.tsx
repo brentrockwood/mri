@@ -1,13 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Drawer from '@mui/material/Drawer'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+import IconButton from '@mui/material/IconButton'
+import Table from '@mui/material/Table'
+import TableHead from '@mui/material/TableHead'
+import TableBody from '@mui/material/TableBody'
+import TableRow from '@mui/material/TableRow'
+import TableCell from '@mui/material/TableCell'
+import CloseIcon from '@mui/icons-material/Close'
 import type { Analysis, File, Risk } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
 import { complexityColor, riskSeverity, severityColorClass } from '../lib/risk'
 import { copyToClipboard, detectWindowsPaths, githubUrl, vscodeUrl } from '../lib/deeplinks'
 import { cn } from '../lib/cn'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const SEVERITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 }
+
+const DRAWER_WIDTH = 360
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function confidencePct(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
@@ -61,13 +75,7 @@ function LinkButton({ href, label }: { href: string; label: string }) {
 
 interface FindingRowProps {
   risk: Risk
-  /** Full "owner/repo" GitHub slug; null for local repos (hides the GH link). */
   repoName: string | null
-  /**
-   * Absolute filesystem root of the repo (e.g. "/home/user/project").
-   * When set, VS Code deep links are constructed as root_path + '/' + file.
-   * When absent, the VS Code button is hidden (relative paths are unusable).
-   */
   rootPath: string | null
   isWindows: boolean
 }
@@ -80,35 +88,62 @@ function FindingRow({ risk, repoName, rootPath, isWindows }: FindingRowProps) {
     : null
 
   return (
-    <div className="py-2 border-b border-panel">
-      <div className="flex items-start gap-1.5 mb-1">
-        <span
-          className={`text-[10px] font-bold uppercase shrink-0 pt-px ${severityColorClass(risk.severity)}`}
+    <Box sx={{ py: 1, borderBottom: '1px solid', borderColor: 'background.paper' }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
+        <Typography
+          component="span"
+          sx={{
+            fontSize: '0.625rem',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            flexShrink: 0,
+            pt: '2px',
+          }}
+          className={severityColorClass(risk.severity)}
         >
           {risk.severity}
-        </span>
-        <span className="text-text-secondary text-xs flex-1 min-w-0 break-words">
+        </Typography>
+        <Typography
+          component="span"
+          sx={{ color: 'text.secondary', fontSize: '0.75rem', flex: 1, minWidth: 0, wordBreak: 'break-word', fontFamily: 'monospace' }}
+        >
           {risk.title}
-        </span>
-        <span className="text-text-muted text-[10px] shrink-0">
+        </Typography>
+        <Typography
+          component="span"
+          sx={{ color: 'text.disabled', fontSize: '0.625rem', flexShrink: 0, fontFamily: 'monospace' }}
+        >
           {confidencePct(risk.confidence)}
-        </span>
-      </div>
+        </Typography>
+      </Box>
       {risk.description && (
-        <div className="text-risk-low text-[11px] mb-1.5 leading-[1.4]">
+        <Typography
+          sx={{ color: 'text.disabled', fontSize: '0.6875rem', mb: 0.75, lineHeight: 1.4, fontFamily: 'monospace' }}
+        >
           {risk.description}
-        </div>
+        </Typography>
       )}
-      <div className="flex items-center gap-1 flex-wrap">
-        <span className="text-text-dim text-[10px] font-mono flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-          {risk.file}
-          {line !== undefined ? `:${line}` : ''}
-        </span>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+        <Typography
+          component="span"
+          sx={{
+            color: 'text.disabled',
+            fontSize: '0.625rem',
+            fontFamily: 'monospace',
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {risk.file}{line !== undefined ? `:${line}` : ''}
+        </Typography>
         {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
         {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
         <CopyButton text={risk.file} />
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 
@@ -128,47 +163,89 @@ function FileRow({ file, onNavigate, repoName, rootPath, isWindows }: FileRowPro
   const vsUrl = rootPath
     ? vscodeUrl(isWindows ? `${rootPath}\\${file.path.replace(/\//g, '\\')}` : `${rootPath}/${file.path}`)
     : null
+
   return (
-    <div
+    <TableRow
+      hover
       onClick={() => onNavigate(file.path, 3)}
-      role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(file.path, 3) } }}
-      className="flex items-center gap-2 py-3 border-b border-panel text-[1.25rem] font-mono cursor-pointer hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(file.path, 3) }
+      }}
+      sx={{ cursor: 'pointer' }}
     >
-      <span
-        className="w-2 h-2 rounded-full shrink-0"
-        style={{ background: dotColor }}
-      />
-      <span className="flex-1 text-link overflow-hidden text-ellipsis whitespace-nowrap underline decoration-border-subtle">
-        {file.path.split('/').pop()}
-      </span>
-      <span className="text-text-dim shrink-0">{file.lines}L</span>
-      <span
-        className={`shrink-0 w-9 text-right ${severityColorClass(riskSeverity(file.risk_score))}`}
-      >
-        {Math.round(file.risk_score * 100)}
-      </span>
-      {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
-      {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
-    </div>
+      <TableCell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            component="span"
+            sx={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dotColor }}
+          />
+          <Typography
+            component="span"
+            sx={{
+              fontSize: '1.25rem',
+              fontFamily: 'monospace',
+              color: '#93c5fd',
+              textDecoration: 'underline',
+              textDecorationColor: '#334155',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {file.path.split('/').pop()}
+          </Typography>
+        </Box>
+      </TableCell>
+      <TableCell align="right">
+        <Typography component="span" sx={{ color: 'text.disabled', fontSize: '1rem', fontFamily: 'monospace' }}>
+          {file.lines}L
+        </Typography>
+      </TableCell>
+      <TableCell align="right">
+        <Typography
+          component="span"
+          sx={{ fontSize: '1rem', fontFamily: 'monospace' }}
+          className={severityColorClass(riskSeverity(file.risk_score))}
+        >
+          {Math.round(file.risk_score * 100)}
+        </Typography>
+      </TableCell>
+      <TableCell>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          {ghUrl !== null && <LinkButton href={ghUrl} label="gh" />}
+          {vsUrl !== null && <LinkButton href={vsUrl} label="vs" />}
+        </Box>
+      </TableCell>
+    </TableRow>
   )
 }
 
 // ── NavItem ───────────────────────────────────────────────────────────────────
 
-/** Clickable row used for imports and imported-by lists. */
 function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNavigate: (id: string, level: ZoomLevel) => void }) {
   return (
-    <div
+    <Box
       onClick={() => onNavigate(id, 3)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(id, 3) } }}
-      className="text-[11px] font-mono text-link py-1 border-b border-panel cursor-pointer underline decoration-border-subtle hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
+      sx={{
+        fontSize: '0.6875rem',
+        fontFamily: 'monospace',
+        color: '#93c5fd',
+        py: 0.5,
+        borderBottom: '1px solid',
+        borderColor: 'background.paper',
+        cursor: 'pointer',
+        textDecoration: 'underline',
+        textDecorationColor: '#334155',
+        '&:hover': { boxShadow: '0 0 8px rgba(147,197,253,0.3)' },
+        transition: 'box-shadow 150ms',
+      }}
     >
       {prefix} {id}
-    </div>
+    </Box>
   )
 }
 
@@ -176,15 +253,30 @@ function NavItem({ id, prefix, onNavigate }: { id: string; prefix: string; onNav
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[1.25rem] font-bold text-text-dim uppercase tracking-[0.08em] pt-3 pb-1.5 border-b border-border-subtle mb-0.5">
+    <Typography
+      sx={{
+        fontSize: '1.25rem',
+        fontWeight: 'bold',
+        color: 'text.disabled',
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        pt: 1.5,
+        pb: 0.75,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        mb: 0.25,
+        fontFamily: 'monospace',
+      }}
+    >
       {children}
-    </div>
+    </Typography>
   )
 }
 
 // ── Inspector ─────────────────────────────────────────────────────────────────
 
 export interface InspectorProps {
+  open: boolean
   selectedId: string | null
   analysis: Analysis
   onClose: () => void
@@ -192,18 +284,17 @@ export interface InspectorProps {
 }
 
 /**
- * Right-side detail panel shown when a module node or file is selected.
- * Displays findings, dependency list, and file table.
+ * Right-side detail panel implemented as a persistent MUI Drawer.
+ * Displays findings, dependency list, and file table for the selected module/file.
  * Items in the dependency and file lists are clickable for navigation.
  */
-export function Inspector({ selectedId, analysis, onClose, onNavigate }: InspectorProps) {
+export function Inspector({ open, selectedId, analysis, onClose, onNavigate }: InspectorProps) {
   const { modules, risks, files, dependencies, repo, meta } = analysis
 
   const isWindows = useMemo(() => detectWindowsPaths(files.map((f) => f.path)), [files])
   const githubSlug = repo.github_slug ?? null
   const rootPath = meta.root_path ?? null
 
-  // Determine whether the selection is a module or a file.
   const { selectedFile, module } = useMemo(() => {
     if (selectedId === null) return { selectedFile: null, module: null }
     const sf = files.find((f) => f.path === selectedId) ?? null
@@ -219,13 +310,10 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
         ? []
         : risks
             .filter((r) => selectedFile ? r.file === selectedId : r.module === selectedId)
-            .sort((a, b) =>
-              (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3),
-            ),
+            .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3)),
     [risks, selectedFile, selectedId],
   )
 
-  // Files table: shown only when viewing a module (not a file).
   const moduleFiles = useMemo(
     () => (selectedId === null || selectedFile) ? [] : files.filter((f) => f.module === selectedId).sort((a, b) => b.risk_score - a.risk_score),
     [selectedFile, files, selectedId],
@@ -240,7 +328,6 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
     [selectedFile, dependencies, selectedId],
   )
 
-  // Close on Escape key.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -250,86 +337,131 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
   }, [onClose])
 
   return (
-    <div className="absolute top-0 right-0 bottom-0 w-[360px] bg-canvas border-l border-border-subtle flex flex-col z-[100] overflow-hidden [box-shadow:var(--shadow-panel)]">
+    <Drawer
+      variant="persistent"
+      anchor="right"
+      open={open}
+      PaperProps={{
+        sx: {
+          width: DRAWER_WIDTH,
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      }}
+    >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border-subtle flex items-start gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold text-text-primary font-mono break-all">
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1,
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: '0.8125rem',
+              fontWeight: 'bold',
+              color: 'text.primary',
+              fontFamily: 'monospace',
+              wordBreak: 'break-all',
+            }}
+          >
             {selectedId === null
               ? 'Inspector'
               : selectedFile
                 ? selectedFile.path.split('/').pop()
                 : selectedId}
-          </div>
+          </Typography>
           {selectedFile && (
-            <div className="text-[11px] text-text-dim mt-0.5 font-mono">
+            <Typography sx={{ fontSize: '0.6875rem', color: 'text.disabled', mt: 0.25, fontFamily: 'monospace' }}>
               {selectedFile.path}
-            </div>
+            </Typography>
           )}
           {selectedId !== null && selectedFile ? (
-            <div className="text-[11px] text-text-muted mt-1 flex gap-2.5 flex-wrap">
-              <span>
+            <Box sx={{ mt: 0.5, display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
+              <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.disabled', fontFamily: 'monospace' }}>
                 Risk{' '}
                 <span className={severityColorClass(riskSeverity(selectedFile.risk_score))}>
                   {Math.round(selectedFile.risk_score * 100)}
                 </span>
-              </span>
-              <span className="text-text-secondary">{selectedFile.lines}L</span>
+              </Typography>
+              <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.secondary', fontFamily: 'monospace' }}>
+                {selectedFile.lines}L
+              </Typography>
               {module && (
-                <span
+                <Typography
+                  component="span"
                   onClick={() => onNavigate(module.id, 3)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(module.id, 3) } }}
-                  className="text-link cursor-pointer underline decoration-border-subtle hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-shadow duration-150"
+                  sx={{
+                    fontSize: '0.6875rem',
+                    color: '#93c5fd',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    textDecorationColor: '#334155',
+                    fontFamily: 'monospace',
+                    '&:hover': { boxShadow: '0 0 8px rgba(147,197,253,0.3)' },
+                  }}
                 >
                   in {module.id}
-                </span>
+                </Typography>
               )}
-            </div>
+            </Box>
           ) : selectedId !== null && module ? (
-            <div className="text-[11px] text-text-muted mt-1 flex gap-2.5">
-              <span>
+            <Box sx={{ mt: 0.5, display: 'flex', gap: 1.25 }}>
+              <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.disabled', fontFamily: 'monospace' }}>
                 Risk{' '}
                 <span className={severityColorClass(riskSeverity(module.risk_score))}>
                   {Math.round(module.risk_score * 100)}
                 </span>
-              </span>
-              <span>
+              </Typography>
+              <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.secondary', fontFamily: 'monospace' }}>
                 Complexity{' '}
-                <span className="text-text-secondary">
-                  {Math.round(module.complexity_score * 100)}
-                </span>
-              </span>
-              <span>{module.file_count} files</span>
-            </div>
+                <span style={{ color: '#cbd5e1' }}>{Math.round(module.complexity_score * 100)}</span>
+              </Typography>
+              <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.disabled', fontFamily: 'monospace' }}>
+                {module.file_count} files
+              </Typography>
+            </Box>
           ) : null}
-        </div>
-        <button
+        </Box>
+
+        <IconButton
           onClick={onClose}
           aria-label="Close inspector"
-          className="bg-transparent border-none text-text-muted cursor-pointer text-base leading-none px-1 py-0.5 shrink-0"
+          size="small"
+          sx={{ flexShrink: 0, mt: -0.5 }}
         >
-          ✕
-        </button>
-      </div>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <Box sx={{ flex: 1, overflowY: 'auto', px: 2, pb: 2 }}>
         {selectedId === null ? (
-          <div className="text-text-dim text-[11px] py-4">
+          <Typography sx={{ color: 'text.disabled', fontSize: '0.6875rem', py: 2, fontFamily: 'monospace' }}>
             Select a node to inspect
-          </div>
+          </Typography>
         ) : (
           <>
             {/* Findings */}
-            <SectionHeader>
-              Findings ({displayedRisks.length})
-            </SectionHeader>
+            <SectionHeader>Findings ({displayedRisks.length})</SectionHeader>
             {displayedRisks.length === 0 ? (
-              <div className="text-border-subtle text-[11px] py-2">
+              <Typography sx={{ color: 'divider', fontSize: '0.6875rem', py: 1, fontFamily: 'monospace' }}>
                 No findings
-              </div>
+              </Typography>
             ) : (
               displayedRisks.map((r) => (
                 <FindingRow
@@ -342,7 +474,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
               ))
             )}
 
-            {/* Dependencies */}
+            {/* Imports */}
             {imports.length > 0 && (
               <>
                 <SectionHeader>Imports ({imports.length})</SectionHeader>
@@ -352,6 +484,7 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
               </>
             )}
 
+            {/* Imported by */}
             {importedBy.length > 0 && (
               <>
                 <SectionHeader>Imported by ({importedBy.length})</SectionHeader>
@@ -361,32 +494,37 @@ export function Inspector({ selectedId, analysis, onClose, onNavigate }: Inspect
               </>
             )}
 
-            {/* Files */}
+            {/* Files table */}
             {moduleFiles.length > 0 && (
               <>
-                <SectionHeader>
-                  Files — sorted by risk
-                </SectionHeader>
-                <div className="flex text-[10px] text-border-subtle py-1 gap-2">
-                  <span className="flex-1">name</span>
-                  <span className="w-9">LOC</span>
-                  <span className="w-9 text-right">risk</span>
-                </div>
-                {moduleFiles.map((f) => (
-                  <FileRow
-                    key={f.path}
-                    file={f}
-                    onNavigate={onNavigate}
-                    repoName={githubSlug}
-                    rootPath={rootPath}
-                    isWindows={isWindows}
-                  />
-                ))}
+                <SectionHeader>Files — sorted by risk</SectionHeader>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>name</TableCell>
+                      <TableCell align="right">LOC</TableCell>
+                      <TableCell align="right">risk</TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {moduleFiles.map((f) => (
+                      <FileRow
+                        key={f.path}
+                        file={f}
+                        onNavigate={onNavigate}
+                        repoName={githubSlug}
+                        rootPath={rootPath}
+                        isWindows={isWindows}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </>
             )}
           </>
         )}
-      </div>
-    </div>
+      </Box>
+    </Drawer>
   )
 }

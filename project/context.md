@@ -1217,3 +1217,16 @@ send 'er gate: gosec clean (0 issues), goimports clean, go vet clean, go build c
 
 EOF
 
+
+---
+date: 2026-03-13T20:29:15-0400
+hash: /Q/kG2UFnwLr+jPMR/P3r4LwEttj5m9X6X+VkWDUBaI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: f843befbd1eaf8ecf7fe17fad5c722978a733069
+---
+
+Phase 10 - MUI Migration: replaced hand-rolled Tailwind components with Material UI v7 equivalents. Installed @mui/material @emotion/react @emotion/styled @mui/icons-material. Created src/lib/theme.ts (dark MUI theme mapping existing design tokens). Wrapped app in ThemeProvider + CssBaseline (main.tsx). Migrated: Tooltip → MUI Paper (fixed positioning kept for mouse-following), SearchBar → MUI TextField + Paper/List dropdown, StatusBar → MUI Tabs/Tab, Inspector → MUI Drawer (persistent, right-anchored) + Table + IconButton. Added open prop to Inspector; App.tsx always renders Inspector and uses activation tab with MUI IconButton + chevron icons. Build: 410KB / 129KB gzip. All 64 Vitest + Go tests pass. ESLint clean. Branch: phase-10-mui.
+
+EOF
+

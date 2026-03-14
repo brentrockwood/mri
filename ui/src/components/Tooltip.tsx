@@ -1,3 +1,6 @@
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
 import type { Analysis } from '../types/analysis'
 import { complexityBand } from '../lib/risk'
 
@@ -11,6 +14,7 @@ export interface TooltipProps {
 /**
  * Hover overlay showing module metadata.
  * Positioned via fixed coordinates derived from mouse client position.
+ * Uses MUI Paper for theming/elevation; fixed positioning for mouse-following.
  */
 export function Tooltip({ moduleId, analysis, mouseX, mouseY }: TooltipProps) {
   const module = analysis.modules.find((m) => m.id === moduleId)
@@ -27,27 +31,56 @@ export function Tooltip({ moduleId, analysis, mouseX, mouseY }: TooltipProps) {
   const hasRisks = high + medium + low > 0
 
   return (
-    <div
-      className="fixed bg-panel border border-border-subtle rounded-md py-2 px-3 text-text-secondary text-xs font-mono pointer-events-none z-[200] max-w-[260px] shadow-[0_4px_16px_rgba(0,0,0,0.6)]"
-      style={{ left: mouseX + 14, top: mouseY - 8 }}
+    <Paper
+      elevation={8}
+      sx={{
+        position: 'fixed',
+        left: mouseX + 14,
+        top: mouseY - 8,
+        py: 1,
+        px: 1.5,
+        fontFamily: 'monospace',
+        fontSize: '0.75rem',
+        pointerEvents: 'none',
+        zIndex: 200,
+        maxWidth: 260,
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
     >
-      <div className="font-bold mb-1 text-text-primary break-all">
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 'bold', mb: 0.5, color: 'text.primary', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.75rem' }}
+      >
         {moduleId}
-      </div>
-      <div className="text-risk-low">
+      </Typography>
+      <Typography sx={{ color: 'text.disabled', fontFamily: 'monospace', fontSize: '0.75rem' }}>
         {module.file_count} file{module.file_count !== 1 ? 's' : ''}
         {loc > 0 ? ` · ${loc} LOC` : ''}
-      </div>
-      <div className="text-risk-low">
+      </Typography>
+      <Typography sx={{ color: 'text.disabled', fontFamily: 'monospace', fontSize: '0.75rem' }}>
         Complexity: {complexityBand(module.complexity_score)}
-      </div>
+      </Typography>
       {hasRisks && (
-        <div className="mt-1.5 flex gap-2">
-          {high > 0 && <span className="text-risk-high">{high}H</span>}
-          {medium > 0 && <span className="text-risk-med">{medium}M</span>}
-          {low > 0 && <span className="text-risk-low">{low}L</span>}
-        </div>
+        <Box sx={{ mt: 0.75, display: 'flex', gap: 1 }}>
+          {high > 0 && (
+            <Typography component="span" sx={{ color: 'error.main', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+              {high}H
+            </Typography>
+          )}
+          {medium > 0 && (
+            <Typography component="span" sx={{ color: 'warning.main', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+              {medium}M
+            </Typography>
+          )}
+          {low > 0 && (
+            <Typography component="span" sx={{ color: 'text.disabled', fontFamily: 'monospace', fontSize: '0.75rem' }}>
+              {low}L
+            </Typography>
+          )}
+        </Box>
       )}
-    </div>
+    </Paper>
   )
 }
