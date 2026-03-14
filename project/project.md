@@ -305,7 +305,7 @@ subtree belong to one logical unit.
 **Rule:**
 - Non-root `package.json` → all TS/JS files in that subtree share one module named after the project directory (e.g. all `ui/**/*.ts(x)` → module `ui`).
 - No non-root `package.json` (pure TS/JS repo, or individual files outside any project) → fall back to directory-level granularity (same as Go).
-- Do not descend into `.gitignore`d trees like `node-modules`.
+- Do not descend into `.gitignore`d trees like `node_modules`.
 
 **Implementation — `internal/ingestion/ingestion.go`:**
 - Add `findJSProjectRoots(root string) []string`: walk the tree, collect repo-relative slash paths of non-root directories that contain `package.json`. Respect the same `skipDirs` and hidden-dir rules as the main walker.

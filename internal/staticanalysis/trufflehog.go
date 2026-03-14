@@ -43,7 +43,7 @@ func runTrufflehog(ctx context.Context, root string) ([]schema.Risk, []string) {
 		// Non-fatal: if we can't write the temp file, skip the pass.
 		return nil, []string{"trufflehog"}
 	}
-	defer os.Remove(excludeFile) // #nosec G104 -- best-effort cleanup of temp file
+	defer os.Remove(excludeFile) //nolint:errcheck // #nosec G104 -- best-effort cleanup of temp file
 
 	cmd := exec.CommandContext(ctx, trufflehogPath, // #nosec G204 -- trufflehogPath from LookPath
 		"filesystem",
@@ -71,7 +71,7 @@ func writeTrufflehogExcludes() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close() // #nosec G307 -- temp file, write then close
+	defer f.Close() //nolint:errcheck // #nosec G307 -- temp file, write then close
 	excludes := []string{
 		"node_modules",
 		".git",
