@@ -1148,3 +1148,30 @@ All 70 Go tests pass, golangci-lint clean, TypeScript clean.
 
 EOF
 
+
+---
+date: 2026-03-13T20:04:30-0400
+hash: tK34qb/dq4/zAVbeVbUDMoDLKJ7WSTqxz3dZsrucY4s=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 4b35072e61121bf4d7d660b09565a0ffc315c6eb
+---
+
+Phase 9 - Static Analysis Audit complete. Branch: phase-8-dep-audit.
+
+Implemented internal/staticanalysis package:
+- staticanalysis.go: Run() entry point combining semgrep and trufflehog passes
+- semgrep.go: runs semgrep --json --config auto; maps ERROR→high, WARNING→medium, INFO→low; confidence from metadata field
+- trufflehog.go: runs trufflehog filesystem --json --no-update with exclusions (node_modules, .git, dist, bin, vendor); verified findings→high/1.0, unverified→medium/0.5
+
+Added make dev-deps target (brew install semgrep/trufflehog).
+Wired staticanalysis.Run() into main.go pipeline after depaudit, before AI passes. Module field assigned via existing moduleForFile().
+
+Self-analysis of mri repo with semgrep + trufflehog: 2 real findings (curl-pipe-bash in devcontainer setup script, npm dev dep vulns in vite/vitest/esbuild), 2 false positives suppressed with nosemgrep comments (exec.CommandContext with LookPath-validated path in js.go; known build-time fixture injection in vite.config.ts).
+
+Decisions logged in memory: AI is secondary to deterministic tools; scale target is Kubernetes/Docker-sized repos; layers model (Risk/Size/Complexity/Coupling) and Figma-style viewport planned for future phases.
+
+All 84 Go tests pass (was 70). golangci-lint clean.
+
+EOF
+

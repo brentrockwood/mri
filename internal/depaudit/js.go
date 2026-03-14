@@ -37,7 +37,7 @@ func auditJS(ctx context.Context, root string, jsProjectRoots []string) ([]schem
 // The npm process exits with a non-zero code when vulnerabilities are found;
 // we ignore the exit code and parse whatever was written to stdout.
 func runNPMAudit(ctx context.Context, npmPath, dir, moduleID, pkgJSONPath string) []schema.Risk {
-	cmd := exec.CommandContext(ctx, npmPath, "audit", "--json") // #nosec G204 -- npmPath from LookPath
+	cmd := exec.CommandContext(ctx, npmPath, "audit", "--json") // #nosec G204 -- npmPath from LookPath // nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 	cmd.Dir = dir
 	var out bytes.Buffer
 	cmd.Stdout = &out

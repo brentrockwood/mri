@@ -20,7 +20,7 @@ PLATFORMS := darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64
 UI_DIR     ?= ui
 UI_STATIC  ?= internal/report/static/report.html
 
-.PHONY: all build dist install version test lint vet fmt clean help ui-build ui-dev
+.PHONY: all build dist install version test lint vet fmt clean help ui-build ui-dev dev-deps
 
 ## all: vet, lint, test, build
 all: vet lint test build
@@ -76,6 +76,13 @@ vet:
 ## fmt: format all Go source files
 fmt:
 	goimports -w .
+
+## dev-deps: install required development tools (semgrep, trufflehog)
+dev-deps:
+	@echo "Installing dev dependencies..."
+	@command -v semgrep   >/dev/null 2>&1 || brew install semgrep
+	@command -v trufflehog >/dev/null 2>&1 || brew install trufflehog
+	@echo "Done."
 
 ## clean: remove build artifacts
 clean:

@@ -19,6 +19,7 @@ import (
 	"github.com/brentrockwood/mri/internal/ingestion"
 	"github.com/brentrockwood/mri/internal/providers"
 	"github.com/brentrockwood/mri/internal/report"
+	"github.com/brentrockwood/mri/internal/staticanalysis"
 	"github.com/brentrockwood/mri/schema"
 )
 
@@ -98,6 +99,20 @@ func runAnalyze(cmd *cobra.Command, args []string, timeout time.Duration) error 
 	result.Analysis.Risks = append(result.Analysis.Risks, depRisks...)
 	if len(depSkipped) > 0 {
 		result.Analysis.Meta.SkippedPasses = append(result.Analysis.Meta.SkippedPasses, depSkipped...)
+	}
+
+	if err = ctx.Err(); err != nil {
+		return fmt.Errorf("analyze: %w", err)
+	}
+
+	// Run deterministic static analysis passes (semgrep, trufflehog). Non-fatal.
+	staticRisks, staticSkipped := staticanalysis.Run(ctx, result.RootDir)
+	for i := range staticRisks {
+		staticRisks[i].Module = moduleForFile(staticRisks[i].File, result.Analysis.Modules)
+	}
+	result.Analysis.Risks = append(result.Analysis.Risks, staticRisks...)
+	if len(staticSkipped) > 0 {
+		result.Analysis.Meta.SkippedPasses = append(result.Analysis.Meta.SkippedPasses, staticSkipped...)
 	}
 
 	if err = ctx.Err(); err != nil {
