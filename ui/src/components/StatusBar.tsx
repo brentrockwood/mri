@@ -1,6 +1,9 @@
+import Tabs from '@mui/material/Tabs'
+import Tab from '@mui/material/Tab'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 import type { Analysis } from '../types/analysis'
 import type { ZoomLevel } from '../layout/types'
-import { cn } from '../lib/cn'
 
 const LEVEL_LABELS: Record<ZoomLevel, string> = {
   1: 'Architecture',
@@ -22,54 +25,81 @@ export function StatusBar({ level, selectedId, analysis, onLevelChange }: Status
   const highCount = risks.filter((r) => r.severity === 'high').length
   const medCount = risks.filter((r) => r.severity === 'medium').length
 
-  // Build breadcrumb: show the path through zoom levels up to the current view.
   const crumbs: string[] = []
   if (level >= 1) crumbs.push('Architecture')
   if (level >= 2) crumbs.push('Modules')
   if (level >= 3 && selectedId !== null) crumbs.push(selectedId)
 
   return (
-    <div className="bg-panel shrink-0 flex items-end gap-4 px-4 pb-3">
-      {/* Tab strip - fixed-width tabs, bottom-left */}
-      <div className="flex items-end gap-1 shrink-0">
+    <Box
+      sx={{
+        bgcolor: 'background.paper',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 2,
+        px: 2,
+        pb: 1.5,
+      }}
+    >
+      {/* Zoom level tab strip */}
+      <Tabs
+        value={level}
+        onChange={(_, v: ZoomLevel) => onLevelChange(v)}
+        sx={{ alignItems: 'flex-end', minHeight: 'unset' }}
+      >
         {LEVELS.map((l) => (
-          <button
-            key={l}
-            onClick={() => onLevelChange(l)}
-            className={cn(
-              'px-6 py-2 font-mono text-[1.25rem] cursor-pointer border border-border-subtle rounded-[4px] transition-colors duration-150',
-              l === level
-                ? 'bg-canvas text-text-primary shadow-[var(--shadow-tab-active)] border-t-0'
-                : 'bg-panel text-text-muted shadow-[var(--shadow-tab-inactive)] hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)]',
-            )}
-          >
-            {LEVEL_LABELS[l]}
-          </button>
+          <Tab key={l} label={LEVEL_LABELS[l]} value={l} disableRipple />
         ))}
-      </div>
+      </Tabs>
 
-      {/* Info row - to the right of tabs */}
-      <div className="flex-1 flex items-center gap-[10px] pb-1 text-[1rem] font-mono text-text-dim flex-wrap">
-        {/* Breadcrumb */}
-        <span>
+      {/* Breadcrumb + summary counts */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.25,
+          pb: 0.5,
+          fontFamily: 'monospace',
+          flexWrap: 'wrap',
+        }}
+      >
+        <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: 'text.disabled' }}>
           {crumbs.map((crumb, i) => (
             <span key={`${crumb}-${i}`}>
-              {i > 0 && <span className="mx-1 text-border-subtle">›</span>}
-              <span className={i === crumbs.length - 1 ? 'text-text-secondary' : 'text-text-dim'}>
+              {i > 0 && (
+                <Box component="span" sx={{ mx: 0.5, color: 'divider' }}>›</Box>
+              )}
+              <Box
+                component="span"
+                sx={{ color: i === crumbs.length - 1 ? 'text.secondary' : 'text.disabled' }}
+              >
                 {crumb}
-              </span>
+              </Box>
             </span>
           ))}
-        </span>
+        </Typography>
 
-        <span className="text-border-subtle">|</span>
+        <Typography component="span" sx={{ color: 'divider', fontFamily: 'monospace', fontSize: '1rem' }}>|</Typography>
 
-        {/* Summary counts */}
-        <span>{repo.module_count} modules</span>
-        <span>{repo.file_count} files</span>
-        {highCount > 0 && <span className="text-risk-high">{highCount} high</span>}
-        {medCount > 0 && <span className="text-risk-med">{medCount} med</span>}
-      </div>
-    </div>
+        <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: 'text.disabled' }}>
+          {repo.module_count} modules
+        </Typography>
+        <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: 'text.disabled' }}>
+          {repo.file_count} files
+        </Typography>
+        {highCount > 0 && (
+          <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: 'error.main' }}>
+            {highCount} high
+          </Typography>
+        )}
+        {medCount > 0 && (
+          <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '1rem', color: 'warning.main' }}>
+            {medCount} med
+          </Typography>
+        )}
+      </Box>
+    </Box>
   )
 }

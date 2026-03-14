@@ -1,8 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import TextField from '@mui/material/TextField'
+import Paper from '@mui/material/Paper'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
 import type { Analysis } from '../types/analysis'
 import { hitKey, search } from '../lib/search'
 import type { SearchHit } from '../lib/search'
-import { cn } from '../lib/cn'
 
 const KIND_LABEL: Record<SearchHit['kind'], string> = {
   module: 'Module',
@@ -25,8 +30,7 @@ export interface SearchBarProps {
 
 /**
  * Controlled search input with a dropdown of matching modules, files, and findings.
- * `query` and `onQueryChange` are owned by the parent so the input can be
- * cleared externally (e.g. when the user clicks a node or the background).
+ * Uses MUI TextField for the input and MUI Paper/List for the dropdown.
  * Keyboard: ArrowUp/Down to navigate results, Enter to select, Escape to clear.
  */
 export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBarProps) {
@@ -75,61 +79,127 @@ export function SearchBar({ query, onQueryChange, analysis, onSelect }: SearchBa
   )
 
   const showDropdown = open && query.trim().length > 0 && results.length > 0
+  const listboxId = 'mri-search-listbox'
+  const activeOptionId = showDropdown ? `mri-search-option-${activeIndex}` : undefined
 
   return (
-    <div
-      className="absolute top-8 left-1/2 -translate-x-1/2 z-50 w-[340px]"
+    <Box
+      sx={{ position: 'absolute', top: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 50, width: 340 }}
       onMouseDown={(e) => e.stopPropagation()} // prevent SVG pan starting
     >
-      {/* Input */}
-      <input
-        ref={inputRef}
-        type="text"
+      <TextField
+        inputRef={inputRef}
+        fullWidth
+        size="small"
         value={query}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search modules, files, findings…"
-        className={cn(
-          'w-full py-[7px] px-3 bg-panel border border-border-subtle',
-          showDropdown ? 'rounded-t-md' : 'rounded-md',
-          'text-text-secondary text-xs font-mono outline-none',
-          'shadow-[0_4px_16px_rgba(0,0,0,0.5)]',
-        )}
+        inputProps={{
+          role: 'combobox',
+          'aria-expanded': showDropdown,
+          'aria-controls': listboxId,
+          'aria-activedescendant': activeOptionId,
+          'aria-autocomplete': 'list',
+          'aria-label': 'Search modules, files, findings',
+        }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderBottomLeftRadius: showDropdown ? 0 : undefined,
+            borderBottomRightRadius: showDropdown ? 0 : undefined,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          },
+        }}
       />
 
-      {/* Dropdown */}
       {showDropdown && (
-        <div className="bg-panel border border-border-subtle border-t-0 rounded-b-md overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
-          {results.map((hit, i) => (
-            <div
-              key={hitKey(hit)}
-              onMouseDown={() => handleSelect(hit)}
-              className={cn(
-                'flex items-baseline gap-2 py-[7px] px-3 cursor-pointer',
-                i === activeIndex ? 'bg-canvas' : 'bg-transparent',
-                i > 0 && 'border-t border-canvas',
-              )}
-            >
-              <span
-                className="text-[9px] font-bold uppercase tracking-[0.06em] shrink-0 w-12"
-                style={{ color: KIND_COLOR[hit.kind] }}
+        <Paper
+          elevation={8}
+          sx={{
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderTop: 'none',
+          }}
+        >
+          <List id={listboxId} role="listbox" disablePadding aria-label="Search results">
+            {results.map((hit, i) => (
+              <ListItemButton
+                key={hitKey(hit)}
+                id={`mri-search-option-${i}`}
+                role="option"
+                aria-selected={i === activeIndex}
+                selected={i === activeIndex}
+                onMouseDown={() => handleSelect(hit)}
+                dense
+                sx={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 1,
+                  py: 0.875,
+                  px: 1.5,
+                  borderTop: i > 0 ? '1px solid' : 'none',
+                  borderColor: 'background.default',
+                  fontFamily: 'monospace',
+                  '&.Mui-selected': { bgcolor: 'background.default' },
+                }}
               >
-                {KIND_LABEL[hit.kind]}
-              </span>
-              <span className="flex-1 text-text-secondary text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap">
-                {hit.label}
-              </span>
-              {'detail' in hit && (
-                <span className="text-text-dim text-[10px] font-mono overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px] shrink-0">
-                  {hit.detail}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.5625rem',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    flexShrink: 0,
+                    width: 48,
+                    color: KIND_COLOR[hit.kind],
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {KIND_LABEL[hit.kind]}
+                </Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    flex: 1,
+                    color: 'text.secondary',
+                    fontSize: '0.75rem',
+                    fontFamily: 'monospace',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {hit.label}
+                </Typography>
+                {'detail' in hit && (
+                  <Typography
+                    component="span"
+                    sx={{
+                      color: 'text.disabled',
+                      fontSize: '0.625rem',
+                      fontFamily: 'monospace',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: 120,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {hit.detail}
+                  </Typography>
+                )}
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
       )}
-    </div>
+    </Box>
   )
 }

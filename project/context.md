@@ -1217,3 +1217,42 @@ send 'er gate: gosec clean (0 issues), goimports clean, go vet clean, go build c
 
 EOF
 
+
+---
+date: 2026-03-13T20:29:15-0400
+hash: /Q/kG2UFnwLr+jPMR/P3r4LwEttj5m9X6X+VkWDUBaI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: f843befbd1eaf8ecf7fe17fad5c722978a733069
+---
+
+Phase 10 - MUI Migration: replaced hand-rolled Tailwind components with Material UI v7 equivalents. Installed @mui/material @emotion/react @emotion/styled @mui/icons-material. Created src/lib/theme.ts (dark MUI theme mapping existing design tokens). Wrapped app in ThemeProvider + CssBaseline (main.tsx). Migrated: Tooltip → MUI Paper (fixed positioning kept for mouse-following), SearchBar → MUI TextField + Paper/List dropdown, StatusBar → MUI Tabs/Tab, Inspector → MUI Drawer (persistent, right-anchored) + Table + IconButton. Added open prop to Inspector; App.tsx always renders Inspector and uses activation tab with MUI IconButton + chevron icons. Build: 410KB / 129KB gzip. All 64 Vitest + Go tests pass. ESLint clean. Branch: phase-10-mui.
+
+EOF
+
+
+---
+date: 2026-03-14T08:10:16-0400
+hash: +4j6oNhXruU/KR/HiTZTcQF3G749qL0NkYWbryZlslI=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 217d9100380ef5e2de83a6468ffc1da89efd0fe8
+---
+
+CodeRabbit + repo-mri review of Phase 10 MUI commit. Fixed 3 findings: (1) removed global cursor:pointer from MuiTableRow theme override (only interactive rows should signal pointer); (2) increased thead font size from 0.625rem to 0.75rem for accessibility; (3) added ARIA combobox pattern to SearchBar (role=combobox, aria-expanded, aria-controls, aria-activedescendant, listbox/option roles on dropdown). Added 19 component tests across 4 new test files (Tooltip, StatusBar, SearchBar, Inspector) plus shared testFixture.ts. Two skipped findings: esbuild vuln (requires Vite 8, dev-server-only, out of scope); curl-pipe-bash in .devcontainer/postCreate.sh (pre-existing, confidence 0.3, not actionable). Total tests: 83/83 passing. Branch: phase-10-mui.
+
+EOF
+
+
+---
+date: 2026-03-14T08:13:24-0400
+hash: fk5uENTNM4Culf3qp8JX+8qJDY5XOnzb8wTw9Vug+BE=
+agent: Claude Code
+model: claude-sonnet-4-6
+startCommit: 63ad97851e52d4c0ae4f608293489e68259852af
+---
+
+send 'er: all gates pass. gosec 0 issues, goimports clean, go vet clean, golangci-lint 0 issues, go test -race 9/9 packages pass, go build clean, vitest 83/83 pass, eslint clean. Pushing phase-10-mui. Branch: phase-10-mui.
+
+EOF
+

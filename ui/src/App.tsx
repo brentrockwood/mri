@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type React from 'react'
+import IconButton from '@mui/material/IconButton'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import { useAnalysis } from './hooks/useAnalysis'
 import { useAppNav } from './hooks/useAppNav'
 import { useZoom } from './hooks/useZoom'
@@ -170,24 +173,39 @@ export function App() {
           onSelect={handleSearchSelect}
         />
 
-        {inspectorOpen && (
-          <Inspector
-            selectedId={selectedId}
-            analysis={analysis}
-            onClose={() => { select(null); setInspectorOpen(false) }}
-            onNavigate={navigateTo}
-          />
-        )}
+        <Inspector
+          open={inspectorOpen}
+          selectedId={selectedId}
+          analysis={analysis}
+          onClose={() => { select(null); setInspectorOpen(false) }}
+          onNavigate={navigateTo}
+        />
 
         {zoomLevel >= 2 && (
-          <button
+          <IconButton
             onClick={() => setInspectorOpen(!inspectorOpen)}
-            style={{ right: inspectorOpen ? 360 : 0 }}
-            className="absolute top-16 z-[99] bg-panel border border-border-subtle text-text-muted cursor-pointer px-1 py-3 rounded-l-[4px] text-sm font-mono hover:[box-shadow:0_0_8px_rgba(147,197,253,0.3)] transition-all duration-150 shadow-[var(--shadow-panel)]"
             aria-label={inspectorOpen ? 'Close inspector' : 'Open inspector'}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 64,
+              right: inspectorOpen ? 360 : 0,
+              zIndex: 99,
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRight: 'none',
+              borderRadius: '4px 0 0 4px',
+              py: 1.5,
+              px: 0.5,
+              color: 'text.disabled',
+              boxShadow: '-4px 0 24px rgba(0,0,0,0.6)',
+              transition: 'right 225ms cubic-bezier(0, 0, 0.2, 1)',
+              '&:hover': { boxShadow: '0 0 8px rgba(147,197,253,0.3)', color: 'text.primary' },
+            }}
           >
-            {inspectorOpen ? '‹' : '›'}
-          </button>
+            {inspectorOpen ? <ChevronLeftIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+          </IconButton>
         )}
 
         {tooltipModuleId !== null && (

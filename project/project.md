@@ -333,7 +333,94 @@ Surface known dependency vulnerabilities in `analysis.json` (UI display deferred
 
 ### Phase 9 - Static-Analysis Audit — broader tooling survey
 
-Before committing to further AI analysis investment, audit what existing static analysis tools can provide faster and cheaper. Think broadly: linters, SAST tools, complexity analyzers, license scanners, dead-code detectors. Identify the highest-signal tools per language already present in the ecosystem and evaluate integrating their output as additional risk passes.
+*Deprecated - Decisions below*
+
+> Before committing to further AI analysis investment, audit what existing static analysis tools can provide faster and cheaper. Think broadly: linters, SAST tools, complexity analyzers, license scanners, dead-code detectors. Identify the highest-signal tools per language already present in the ecosystem and evaluate integrating their output as additional risk passes.
+
+---
+
+### Phase 9 — Static Analysis Integration
+
+**Implementation structure:** `internal/staticanalysis/` package, mirroring `internal/providers/`. One file per tool family. A `StaticPass` interface each tool implements. A single `Run()` entry point called from `cmd/repo-mri/main.go` after `aggregation.Aggregate()` and before the report is written. All passes are non-fatal: tool absent or non-zero exit → name appended to `meta.skipped_passes`, analysis continues.
+
+```go
+type StaticPass interface {
+    Name() string
+    Available() bool                          // exec.LookPath check
+    Run(ctx context.Context, root string, a *schema.Analysis) ([]schema.Risk, error)
+}
+```
+
+Tool availability is checked once at startup via `exec.LookPath`. If none of the tier 1 tools are available, a single notice is printed and the section is skipped entirely.
+
+---
+
+**Tier 1 tools — implement in this phase:**
+
+| Tool | Scope | Invocation | Notes |
+|---|---|---|---|
+| `semgrep` | All languages | `semgrep --json --config auto <root>` | Cornerstone. Replaces most AI bug/security analysis. `--config auto` uses the community ruleset. |
+| `trufflehog` | All languages | `trufflehog filesystem --json <root>` | Secret scanning. Finding present = `high`. |
+| `staticcheck` | Go | `staticcheck -f json ./...` (run from root) | SA* → `high`, S* / ST* → `low`. |
+| `madge` | JS/TS | `madge --json --circular <js-root>` per JS project root | Circular deps → `high`. One invocation per `findJSProjectRoots()` result. |
+| `depcheck` | JS/TS | `depcheck --json <js-root>` per JS project root | Unused deps → `low`. |
+| `bandit` | Python | `bandit -r -f json <root>` | Pass through `HIGH`/`MEDIUM`/`LOW` directly. |
+| `radon` | Python | `radon cc -j <root>` | Cyclomatic complexity: >10 → `high`, 6–10 → `medium`, ≤5 → `low`. |
+
+**Tier 2 — deferred or skipped (do not implement):**
+`golangci-lint`, `eslint`, `gocyclo`, `ts-prune`, `es-complexity`, `codeql`, `go/analysis`, `pylint`. Reasons recorded in architectural review; do not revisit without human authorisation.
+
+---
+
+**Severity normalisation — hardcoded per tool, not configurable:**
+
+| Tool | Mapping |
+|---|---|
+| semgrep | `ERROR` → `high`, `WARNING` → `medium`, `INFO` → `low` |
+| trufflehog | finding present → `high` |
+| staticcheck | `SA*` → `high`; `S*`, `ST*` → `low` |
+| madge | always `high` |
+| depcheck | always `low` |
+| bandit | pass through `HIGH`/`MEDIUM`/`LOW` |
+| radon | >10 → `high`, 6–10 → `medium`, ≤5 → `low` |
+
+---
+
+**Risk entry shape for static analysis findings:**
+
+```json
+{
+  "id": "risk_042",
+  "severity": "high",
+  "type": "static",
+  "pass": "semgrep",
+  "module": "internal/providers",
+  "file": "internal/providers/anthropic.go",
+  "title": "semgrep: go.lang.security.audit.blocklist.blowfish",
+  "description": "<semgrep message text>",
+  "confidence": 1.0,
+  "evidence_lines": [34]
+}
+```
+
+`confidence` is always `1.0` for deterministic static tools. `pass` is the tool name string. `type` is `"static"` for all tools except `trufflehog` which uses `"secret"` and `madge` which uses `"circular-dep"`.
+
+---
+
+**Semgrep as devdependency:** `semgrep` is installed via `brew` on the development machine and treated as a first-class tool. It is not bundled with the binary. At analysis time, `exec.LookPath("semgrep")` determines availability. The `--config auto` flag uses the public Semgrep community registry — requires network access. If network is unavailable, semgrep will error and be added to `skipped_passes`.
+
+---
+
+**Schema:** No schema version bump required. All static analysis findings map to existing `schema.Risk` fields. `meta.skipped_passes` already accepts arbitrary strings.
+
+---
+
+**Tests:** Table-driven tests for each tool's severity normalisation function. Integration tests that run a tool against a fixture directory are gated with `testing.Short()` (skipped in `-short` mode for CI without the tools installed).
+
+---
+
+**Initial corpus:** Run against the `mri` repo itself (`repo-mri analyze .`) as the primary validation target before shipping. Compare static tool findings against the current AI pass findings to assess coverage overlap and false-positive rates.
+
 
 ---
 
