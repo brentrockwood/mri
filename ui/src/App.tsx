@@ -59,12 +59,14 @@ export function App() {
 
   const handleNodeDoubleClick = useCallback((id: string) => {
     setSearchQuery('')
-    const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
     if (zoomLevel === 1) {
+      const newWidth = inspectorOpen ? window.innerWidth - 360 : undefined
       setLayoutAvailableWidth(newWidth)
       selectAndZoom(null, 2)
     } else if (zoomLevel === 2) {
-      setLayoutAvailableWidth(newWidth)
+      // Navigating to z=3 always opens the inspector, so account for its
+      // 360px width when computing the available canvas area.
+      setLayoutAvailableWidth(window.innerWidth - 360)
       navigateTo(id, 3)
       setInspectorOpen(true)
     }

@@ -26,6 +26,9 @@ type Result struct {
 	Cleanup func()
 	// Analysis is the partially-populated analysis (no risks yet).
 	Analysis schema.Analysis
+	// JSProjectRoots is the list of repo-relative slash paths of directories
+	// that contain a non-root package.json, as detected by findJSProjectRoots.
+	JSProjectRoots []string
 }
 
 // Ingest runs the full ingestion pipeline for the given source.
@@ -239,9 +242,10 @@ func Ingest(ctx context.Context, source string) (*Result, error) {
 	}
 
 	return &Result{
-		RootDir:  root,
-		Cleanup:  cleanup,
-		Analysis: analysis,
+		RootDir:        root,
+		Cleanup:        cleanup,
+		Analysis:       analysis,
+		JSProjectRoots: jsProjectRoots,
 	}, nil
 }
 
@@ -269,10 +273,16 @@ func moduleID(relPath, language string, jsProjectRoots []string) string {
 		return slashPath[:idx]
 	}
 	if language == "typescript" || language == "javascript" {
+		// Return the longest matching project root so that nested workspaces
+		// (e.g. "ui/packages/core" inside "ui") resolve to the most specific root.
+		best := ""
 		for _, proj := range jsProjectRoots {
-			if strings.HasPrefix(slashPath, proj+"/") {
-				return proj
+			if strings.HasPrefix(slashPath, proj+"/") && len(proj) > len(best) {
+				best = proj
 			}
+		}
+		if best != "" {
+			return best
 		}
 		// Fallback: directory-level granularity.
 		idx := strings.LastIndex(slashPath, "/")

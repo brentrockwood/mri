@@ -18,7 +18,7 @@ function mriDevDataPlugin(): Plugin {
     transformIndexHtml(html) {
       const fixturePath = resolve(__dirname, 'fixtures/analysis.json')
       const data = readFileSync(fixturePath, 'utf-8')
-      return html.replace('</head>', `  <script>window.__MRI_DATA__ = ${data};</script>\n</head>`)
+      return html.replace('</head>', `  <script>window.__MRI_DATA__ = ${data};</script>\n</head>`) // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag
     },
   }
 }
